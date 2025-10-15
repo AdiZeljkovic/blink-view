@@ -6,9 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Trash2, Plus, Key } from "lucide-react";
-import AdminRSSFeeds from "./AdminRSSFeeds";
-import AdminRedditFeeds from "./AdminRedditFeeds";
-import AdminYouTubeFeeds from "./AdminYouTubeFeeds";
 
 const AdminHomeWidgets = () => {
   const [bookmarks, setBookmarks] = useState<any[]>([]);
@@ -206,10 +203,6 @@ const AdminHomeWidgets = () => {
           ))}
         </CardContent>
       </Card>
-
-      <AdminRSSFeeds />
-      <AdminRedditFeeds />
-      <AdminYouTubeFeeds />
     </div>
   );
 };
