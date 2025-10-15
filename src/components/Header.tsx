@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Header = () => {
   const location = useLocation();
@@ -15,13 +16,13 @@ const Header = () => {
   ];
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50 animate-fade-in-down">
+    <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50 animate-fade-in-down shadow-sm">
       <div className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
-          <Link to="/" className="text-lg font-bold tracking-tight transition-all duration-300 hover:text-primary cursor-pointer">
+          <Link to="/" className="text-lg font-bold tracking-tight transition-all duration-300 hover:text-primary cursor-pointer hover:scale-105">
             ADI ZELJKOVIĆ
           </Link>
-          <nav className="flex gap-8">
+          <nav className="flex gap-8 items-center">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
@@ -35,6 +36,7 @@ const Header = () => {
                 {link.label}
               </Link>
             ))}
+            <ThemeToggle />
           </nav>
         </div>
       </div>

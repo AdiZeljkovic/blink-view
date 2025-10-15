@@ -135,12 +135,13 @@ All colors MUST be HSL.
   }
   
   .widget-card {
-    @apply bg-card rounded-lg border border-border p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-lg;
+    @apply bg-card/80 backdrop-blur-sm rounded-xl border border-border p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-xl hover:-translate-y-1;
     animation: fade-in 0.4s ease-out;
+    box-shadow: var(--shadow-md);
   }
   
   .smooth-hover {
-    @apply transition-all duration-300 ease-out hover:scale-[1.02];
+    @apply transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg;
   }
   
   .glow-primary {
@@ -149,5 +150,9 @@ All colors MUST be HSL.
   
   .glow-primary-intense {
     box-shadow: 0 0 30px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary) / 0.1);
+  }
+  
+  .glass-effect {
+    @apply bg-card/60 backdrop-blur-md border border-border/50;
   }
 }
