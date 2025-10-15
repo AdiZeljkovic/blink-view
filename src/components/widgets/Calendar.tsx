@@ -30,13 +30,13 @@ const Calendar = () => {
   const todayEvents = events.filter(e => e.date === todayStr).sort((a, b) => a.time.localeCompare(b.time));
   const tomorrowEvents = events.filter(e => e.date === tomorrowStr).sort((a, b) => a.time.localeCompare(b.time));
 
-  const todayDate = today.toLocaleDateString("sr-RS", { 
+  const todayDate = today.toLocaleDateString("bs-BA", { 
     weekday: "long", 
     day: "numeric", 
     month: "long" 
   });
 
-  const tomorrowDate = tomorrow.toLocaleDateString("sr-RS", { 
+  const tomorrowDate = tomorrow.toLocaleDateString("bs-BA", { 
     weekday: "long", 
     day: "numeric", 
     month: "long" 

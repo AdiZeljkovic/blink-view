@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { sr } from "date-fns/locale";
+import { bs } from "date-fns/locale";
 import { toast } from "sonner";
 
 interface Event {
@@ -142,7 +142,7 @@ const Kalendar = () => {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {eventDate ? format(eventDate, "PPP", { locale: sr }) : "Odaberite datum"}
+                        {eventDate ? format(eventDate, "PPP", { locale: bs }) : "Odaberite datum"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -194,7 +194,7 @@ const Kalendar = () => {
                   />
                 </div>
                 <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
-                  <strong>Odabrani datum:</strong> {format(eventDate, "EEEE, dd. MMMM yyyy", { locale: sr })}
+                  <strong>Odabrani datum:</strong> {format(eventDate, "EEEE, dd. MMMM yyyy", { locale: bs })}
                 </div>
                 <Button onClick={addEvent} className="w-full">
                   Sačuvaj

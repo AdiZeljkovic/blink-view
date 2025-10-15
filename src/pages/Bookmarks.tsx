@@ -295,7 +295,7 @@ const Bookmarks = () => {
                         className="w-4 h-4"
                       />
                       <Clock className="w-4 h-4" />
-                      <span className="text-sm">Read Later</span>
+                      <span className="text-sm">Za Kasnije</span>
                     </label>
                   </div>
 
@@ -349,7 +349,7 @@ const Bookmarks = () => {
               <SelectContent>
                 <SelectItem value="all">Svi bookmarks</SelectItem>
                 <SelectItem value="favorites">Favoriti</SelectItem>
-                <SelectItem value="readLater">Read Later</SelectItem>
+                <SelectItem value="readLater">Za Kasnije</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -376,7 +376,7 @@ const Bookmarks = () => {
               <p className="text-3xl font-bold text-primary">
                 {bookmarks.filter((b) => b.isReadLater).length}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Read Later</p>
+              <p className="text-sm text-muted-foreground mt-1">Za Kasnije</p>
             </div>
           </div>
           <div className="widget-card">
@@ -416,7 +416,7 @@ const Bookmarks = () => {
                           {bookmark.title}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(bookmark.createdAt).toLocaleDateString("sr-RS")}
+                          {new Date(bookmark.createdAt).toLocaleDateString("bs-BA")}
                         </p>
                       </div>
                     </div>

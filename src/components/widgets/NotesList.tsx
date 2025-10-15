@@ -51,7 +51,7 @@ const NotesList = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("sr-RS", {
+    return date.toLocaleDateString("bs-BA", {
       day: "numeric",
       month: "long",
       year: "numeric",

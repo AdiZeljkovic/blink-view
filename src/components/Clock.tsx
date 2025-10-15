@@ -18,7 +18,7 @@ const Clock = () => {
     return "Dobro veče";
   };
 
-  const formattedTime = time.toLocaleTimeString("sr-RS", {
+  const formattedTime = time.toLocaleTimeString("bs-BA", {
     hour: "2-digit",
     minute: "2-digit",
   });
