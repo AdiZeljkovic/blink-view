@@ -6,6 +6,8 @@ import TaskList from "@/components/widgets/TaskList";
 import Calendar from "@/components/widgets/Calendar";
 import Weather from "@/components/widgets/Weather";
 import QuickNotes from "@/components/widgets/QuickNotes";
+import ServerMonitoring from "@/components/widgets/ServerMonitoring";
+import HomelabApps from "@/components/widgets/HomelabApps";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("fokus");
@@ -38,8 +40,14 @@ const Index = () => {
               {/* Right Column */}
               <div className="space-y-6">
                 <Weather />
+                <ServerMonitoring />
                 <QuickNotes />
               </div>
+            </section>
+
+            {/* Homelab Apps - Full Width */}
+            <section className="pt-6">
+              <HomelabApps />
             </section>
           </div>
         </main>
