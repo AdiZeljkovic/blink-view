@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Cpu, Newspaper, Video, MessageSquare } from "lucide-react";
+import { Cpu, Newspaper, Video, MessageSquare, RefreshCw, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface FeedItem {
   title: string;
@@ -14,12 +16,21 @@ const Tech = () => {
   const [redditPosts, setRedditPosts] = useState<FeedItem[]>([]);
   const [youtubeVideos, setYoutubeVideos] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [newsLimit, setNewsLimit] = useState(10);
+  const [videosLimit, setVideosLimit] = useState(8);
+  const [redditLimit, setRedditLimit] = useState(8);
 
   useEffect(() => {
     fetchTechFeeds();
+    const interval = setInterval(() => fetchTechFeeds(true), 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchTechFeeds = async () => {
+  const fetchTechFeeds = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setRefreshing(!silent);
+    
     try {
       // Fetch tech news from multiple sources via RSS2JSON
       const newsPromises = [
@@ -96,9 +107,16 @@ const Tech = () => {
 
     } catch (error) {
       console.error('Error fetching tech feeds:', error);
+      toast.error("Greška pri učitavanju sadržaja");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchTechFeeds();
+    toast.success("Sadržaj osvježen");
   };
 
   const formatDate = (dateString: string) => {
@@ -128,9 +146,20 @@ const Tech = () => {
     <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <Cpu className="w-8 h-8 text-primary" />
-          <h1 className="text-4xl font-bold">Tech Hub</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <Cpu className="w-8 h-8 text-primary" />
+            <h1 className="text-4xl font-bold">Tech Hub</h1>
+          </div>
+          <Button 
+            onClick={handleRefresh} 
+            disabled={refreshing}
+            variant="outline"
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Osvježi
+          </Button>
         </div>
 
         {/* Main Grid */}
@@ -145,7 +174,7 @@ const Tech = () => {
               </div>
               
               <div className="space-y-4">
-                {techNews.map((item, index) => (
+                {techNews.slice(0, newsLimit).map((item, index) => (
                   <a
                     key={index}
                     href={item.link}
@@ -174,6 +203,12 @@ const Tech = () => {
                     </div>
                   </a>
                 ))}
+                {techNews.length > newsLimit && (
+                  <Button onClick={() => setNewsLimit(newsLimit + 10)} variant="outline" className="w-full gap-2">
+                    <ChevronDown className="w-4 h-4" />
+                    Učitaj Još
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -185,7 +220,7 @@ const Tech = () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {youtubeVideos.map((video, index) => (
+                {youtubeVideos.slice(0, videosLimit).map((video, index) => (
                   <a
                     key={index}
                     href={video.link}
@@ -216,6 +251,12 @@ const Tech = () => {
                   </a>
                 ))}
               </div>
+              {youtubeVideos.length > videosLimit && (
+                <Button onClick={() => setVideosLimit(videosLimit + 8)} variant="outline" className="w-full gap-2 mt-4">
+                  <ChevronDown className="w-4 h-4" />
+                  Učitaj Još Videa
+                </Button>
+              )}
             </div>
           </div>
 
@@ -228,7 +269,7 @@ const Tech = () => {
               </div>
               
               <div className="space-y-4">
-                {redditPosts.map((post, index) => (
+                {redditPosts.slice(0, redditLimit).map((post, index) => (
                   <a
                     key={index}
                     href={post.link}
@@ -245,6 +286,12 @@ const Tech = () => {
                     </div>
                   </a>
                 ))}
+                {redditPosts.length > redditLimit && (
+                  <Button onClick={() => setRedditLimit(redditLimit + 8)} variant="outline" className="w-full gap-2">
+                    <ChevronDown className="w-4 h-4" />
+                    Učitaj Još
+                  </Button>
+                )}
               </div>
             </div>
           </div>

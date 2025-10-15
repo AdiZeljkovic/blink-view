@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Globe, Newspaper, MessageSquare } from "lucide-react";
+import { Globe, Newspaper, MessageSquare, RefreshCw, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface FeedItem {
   title: string;
@@ -15,12 +17,21 @@ const Vijesti = () => {
   const [regionalNews, setRegionalNews] = useState<FeedItem[]>([]);
   const [redditPosts, setRedditPosts] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [worldLimit, setWorldLimit] = useState(10);
+  const [regionalLimit, setRegionalLimit] = useState(10);
+  const [redditLimit, setRedditLimit] = useState(8);
 
   useEffect(() => {
     fetchNewsFeeds();
+    const interval = setInterval(() => fetchNewsFeeds(true), 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchNewsFeeds = async () => {
+  const fetchNewsFeeds = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setRefreshing(!silent);
+    
     try {
       // Fetch world news from multiple sources via RSS2JSON
       const worldNewsPromises = [
@@ -99,9 +110,16 @@ const Vijesti = () => {
 
     } catch (error) {
       console.error('Error fetching news feeds:', error);
+      toast.error("Greška pri učitavanju vijesti");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchNewsFeeds();
+    toast.success("Vijesti osvježene");
   };
 
   const formatDate = (dateString: string) => {
@@ -131,9 +149,20 @@ const Vijesti = () => {
     <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <Globe className="w-8 h-8 text-primary" />
-          <h1 className="text-4xl font-bold">Vijesti</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <Globe className="w-8 h-8 text-primary" />
+            <h1 className="text-4xl font-bold">Vijesti</h1>
+          </div>
+          <Button 
+            onClick={handleRefresh} 
+            disabled={refreshing}
+            variant="outline"
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Osvježi
+          </Button>
         </div>
 
         {/* Main Grid */}
@@ -148,7 +177,7 @@ const Vijesti = () => {
               </div>
               
               <div className="space-y-4">
-                {worldNews.map((item, index) => (
+                {worldNews.slice(0, worldLimit).map((item, index) => (
                   <a
                     key={index}
                     href={item.link}
@@ -177,6 +206,12 @@ const Vijesti = () => {
                     </div>
                   </a>
                 ))}
+                {worldNews.length > worldLimit && (
+                  <Button onClick={() => setWorldLimit(worldLimit + 10)} variant="outline" className="w-full gap-2">
+                    <ChevronDown className="w-4 h-4" />
+                    Učitaj Još
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -188,7 +223,7 @@ const Vijesti = () => {
               </div>
               
               <div className="space-y-4">
-                {regionalNews.map((item, index) => (
+                {regionalNews.slice(0, regionalLimit).map((item, index) => (
                   <a
                     key={index}
                     href={item.link}
@@ -217,6 +252,12 @@ const Vijesti = () => {
                     </div>
                   </a>
                 ))}
+                {regionalNews.length > regionalLimit && (
+                  <Button onClick={() => setRegionalLimit(regionalLimit + 10)} variant="outline" className="w-full gap-2">
+                    <ChevronDown className="w-4 h-4" />
+                    Učitaj Još
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -230,7 +271,7 @@ const Vijesti = () => {
               </div>
               
               <div className="space-y-4">
-                {redditPosts.map((post, index) => (
+                {redditPosts.slice(0, redditLimit).map((post, index) => (
                   <a
                     key={index}
                     href={post.link}
@@ -247,6 +288,12 @@ const Vijesti = () => {
                     </div>
                   </a>
                 ))}
+                {redditPosts.length > redditLimit && (
+                  <Button onClick={() => setRedditLimit(redditLimit + 8)} variant="outline" className="w-full gap-2">
+                    <ChevronDown className="w-4 h-4" />
+                    Učitaj Još
+                  </Button>
+                )}
               </div>
             </div>
           </div>
