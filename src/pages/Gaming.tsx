@@ -24,9 +24,9 @@ const Gaming = () => {
   const [youtubeVideos, setYoutubeVideos] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [newsLimit, setNewsLimit] = useState(10);
-  const [videosLimit, setVideosLimit] = useState(8);
-  const [redditLimit, setRedditLimit] = useState(8);
+  const [newsLimit, setNewsLimit] = useState(5);
+  const [videosLimit, setVideosLimit] = useState(4);
+  const [redditLimit, setRedditLimit] = useState(5);
   const [pageTitle, setPageTitle] = useState("Gaming Hub");
 
   useEffect(() => {
