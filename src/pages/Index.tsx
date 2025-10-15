@@ -1,4 +1,3 @@
-import Header from "@/components/Header";
 import Clock from "@/components/Clock";
 import SearchBar from "@/components/SearchBar";
 import TaskList from "@/components/widgets/TaskList";
@@ -11,8 +10,6 @@ import Bookmarks from "@/components/widgets/Bookmarks";
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      
       <main className="flex-1 container mx-auto px-6 py-8 max-w-[1600px]">
         <div className="space-y-8">
           {/* Central Block - Clock and Search */}
