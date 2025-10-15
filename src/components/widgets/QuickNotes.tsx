@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface Note {
   id: string;
@@ -20,8 +21,7 @@ const QuickNotes = () => {
     }
     
     // Get existing notes
-    const existingNotes = localStorage.getItem("quick-notes-list");
-    const notes: Note[] = existingNotes ? JSON.parse(existingNotes) : [];
+    const notes: Note[] = storage.getJSON<Note[]>("quick-notes-list") || [];
     
     // Add new note
     const newNote: Note = {
@@ -32,8 +32,8 @@ const QuickNotes = () => {
     
     notes.unshift(newNote); // Add to beginning
     
-    // Save to localStorage
-    localStorage.setItem("quick-notes-list", JSON.stringify(notes));
+    // Save to storage
+    storage.setJSON("quick-notes-list", notes);
     
     // Clear the textarea
     setNote("");

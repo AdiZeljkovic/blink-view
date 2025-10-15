@@ -3,6 +3,7 @@ import { CheckSquare, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface Task {
   id: string;
@@ -15,15 +16,15 @@ const TaskList = () => {
   const [newTaskText, setNewTaskText] = useState("");
 
   useEffect(() => {
-    const savedTasks = localStorage.getItem("task-list");
+    const savedTasks = storage.getJSON<Task[]>("task-list");
     if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
+      setTasks(savedTasks);
     }
   }, []);
 
   const saveTasks = (updatedTasks: Task[]) => {
     setTasks(updatedTasks);
-    localStorage.setItem("task-list", JSON.stringify(updatedTasks));
+    storage.setJSON("task-list", updatedTasks);
   };
 
   const toggleTask = (id: string) => {
