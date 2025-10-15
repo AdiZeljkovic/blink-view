@@ -6,6 +6,7 @@ import Weather from "@/components/widgets/Weather";
 import QuickNotes from "@/components/widgets/QuickNotes";
 import HomelabApps from "@/components/widgets/HomelabApps";
 import Bookmarks from "@/components/widgets/Bookmarks";
+import NotesList from "@/components/widgets/NotesList";
 
 const Index = () => {
   return (
@@ -39,6 +40,7 @@ const Index = () => {
             <div className="lg:col-span-1 space-y-6">
               <TaskList />
               <Calendar />
+              <NotesList />
             </div>
           </section>
         </div>

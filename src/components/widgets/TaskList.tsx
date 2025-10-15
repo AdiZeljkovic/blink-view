@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { CheckSquare } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { CheckSquare, Plus, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Task {
   id: string;
@@ -9,20 +10,49 @@ interface Task {
   completed: boolean;
 }
 
-const initialTasks: Task[] = [
-  { id: "1", text: "Pregledati e-poštu", completed: false },
-  { id: "2", text: "Završiti projektnu dokumentaciju", completed: false },
-  { id: "3", text: "Sastanak sa timom u 14:00", completed: false },
-  { id: "4", text: "Ažurirati Homelab setup", completed: true },
-];
-
 const TaskList = () => {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTaskText, setNewTaskText] = useState("");
+
+  useEffect(() => {
+    const savedTasks = localStorage.getItem("task-list");
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks));
+    }
+  }, []);
+
+  const saveTasks = (updatedTasks: Task[]) => {
+    setTasks(updatedTasks);
+    localStorage.setItem("task-list", JSON.stringify(updatedTasks));
+  };
 
   const toggleTask = (id: string) => {
-    setTasks(tasks.map(task => 
+    const updated = tasks.map((task) =>
       task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+    );
+    saveTasks(updated);
+  };
+
+  const addTask = () => {
+    if (!newTaskText.trim()) {
+      toast.error("Unesite tekst zadatka");
+      return;
+    }
+
+    const newTask: Task = {
+      id: Date.now().toString(),
+      text: newTaskText,
+      completed: false
+    };
+
+    saveTasks([...tasks, newTask]);
+    setNewTaskText("");
+    toast.success("Zadatak dodan");
+  };
+
+  const deleteTask = (id: string) => {
+    saveTasks(tasks.filter(t => t.id !== id));
+    toast.success("Zadatak obrisan");
   };
 
   return (
@@ -31,28 +61,57 @@ const TaskList = () => {
         <CheckSquare className="h-5 w-5 text-primary" />
         <h2 className="font-mono-heading text-xl">Današnji Zadaci</h2>
       </div>
+
+      <div className="flex gap-2">
+        <Input
+          value={newTaskText}
+          onChange={(e) => setNewTaskText(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && addTask()}
+          placeholder="Dodaj novi zadatak..."
+          className="flex-1 text-sm"
+        />
+        <Button onClick={addTask} size="icon" className="flex-shrink-0">
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
+
       <div className="space-y-3">
         {tasks.map((task, index) => (
-          <div key={task.id} className="flex items-start gap-3 group py-1 animate-slide-up" style={{ animationDelay: `${index * 100}ms` }}>
-            <Checkbox
-              id={task.id}
+          <div
+            key={task.id}
+            className="group flex items-start gap-3 py-1 animate-slide-up"
+            style={{ animationDelay: `${index * 50}ms` }}
+          >
+            <input
+              type="checkbox"
               checked={task.completed}
-              onCheckedChange={() => toggleTask(task.id)}
-              className="mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              onChange={() => toggleTask(task.id)}
+              className="mt-0.5 w-4 h-4 rounded border-2 border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-0 cursor-pointer transition-all duration-300"
             />
-            <label
-              htmlFor={task.id}
-              className={cn(
-                "flex-1 text-sm cursor-pointer transition-all duration-300 leading-relaxed",
+            <span
+              className={`flex-1 text-sm cursor-pointer transition-all duration-300 leading-relaxed ${
                 task.completed
                   ? "line-through text-muted-foreground"
                   : "text-foreground group-hover:text-primary group-hover:translate-x-1"
-              )}
+              }`}
             >
               {task.text}
-            </label>
+            </span>
+            <Button
+              onClick={() => deleteTask(task.id)}
+              variant="ghost"
+              size="icon"
+              className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 h-7 w-7 flex-shrink-0"
+            >
+              <Trash2 className="w-3 h-3 text-destructive" />
+            </Button>
           </div>
         ))}
+        {tasks.length === 0 && (
+          <p className="text-sm text-muted-foreground italic text-center py-4">
+            Nema zadataka za danas
+          </p>
+        )}
       </div>
     </div>
   );

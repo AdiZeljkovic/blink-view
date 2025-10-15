@@ -1,24 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
 
+interface Note {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
 const QuickNotes = () => {
   const [note, setNote] = useState("");
 
   const handleSave = () => {
-    if (!note.trim()) return;
+    if (!note.trim()) {
+      toast.error("Bilješka ne može biti prazna");
+      return;
+    }
     
-    // In a real app, this would save to a backend
-    localStorage.setItem("quick-note", note);
+    // Get existing notes
+    const existingNotes = localStorage.getItem("quick-notes-list");
+    const notes: Note[] = existingNotes ? JSON.parse(existingNotes) : [];
+    
+    // Add new note
+    const newNote: Note = {
+      id: Date.now().toString(),
+      content: note,
+      createdAt: new Date().toISOString()
+    };
+    
+    notes.unshift(newNote); // Add to beginning
+    
+    // Save to localStorage
+    localStorage.setItem("quick-notes-list", JSON.stringify(notes));
+    
+    // Clear the textarea
+    setNote("");
+    
     toast.success("Bilješka sačuvana");
+    
+    // Dispatch custom event to notify NotesList widget
+    window.dispatchEvent(new Event("notesUpdated"));
   };
-
-  useState(() => {
-    const savedNote = localStorage.getItem("quick-note");
-    if (savedNote) setNote(savedNote);
-  });
 
   return (
     <div className="widget-card space-y-5">
