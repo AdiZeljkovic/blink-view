@@ -17,13 +17,14 @@ const Bookmarks = () => {
       </div>
       
       <div className="space-y-3">
-        {bookmarks.map((bookmark) => (
+        {bookmarks.map((bookmark, index) => (
           <a
             key={bookmark.name}
             href={bookmark.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-sm text-foreground hover:text-primary transition-colors"
+            className="block text-sm text-foreground hover:text-primary transition-all duration-300 hover:translate-x-1 animate-slide-up"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
             {bookmark.name}
           </a>

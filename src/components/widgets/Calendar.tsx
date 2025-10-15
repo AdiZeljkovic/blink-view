@@ -40,12 +40,12 @@ const Calendar = () => {
             {today}
           </h3>
           <div className="space-y-2.5">
-            {events.filter(e => e.isToday).map((event) => (
-              <div key={event.id} className="flex gap-3 items-start">
-                <span className="text-xs font-bold text-primary w-11 shrink-0 pt-0.5">
+            {events.filter(e => e.isToday).map((event, index) => (
+              <div key={event.id} className="flex gap-3 items-start group hover:translate-x-1 transition-all duration-300 animate-slide-up cursor-pointer" style={{ animationDelay: `${index * 100}ms` }}>
+                <span className="text-xs font-bold text-primary w-11 shrink-0 pt-0.5 group-hover:glow-primary transition-all duration-300">
                   {event.time}
                 </span>
-                <span className="text-sm text-foreground leading-relaxed">
+                <span className="text-sm text-foreground leading-relaxed group-hover:text-primary transition-colors duration-300">
                   {event.title}
                 </span>
               </div>
@@ -58,12 +58,12 @@ const Calendar = () => {
             {tomorrow}
           </h3>
           <div className="space-y-2.5">
-            {events.filter(e => !e.isToday).map((event) => (
-              <div key={event.id} className="flex gap-3 items-start">
-                <span className="text-xs font-bold text-primary w-11 shrink-0 pt-0.5">
+            {events.filter(e => !e.isToday).map((event, index) => (
+              <div key={event.id} className="flex gap-3 items-start group hover:translate-x-1 transition-all duration-300 animate-slide-up cursor-pointer" style={{ animationDelay: `${(index + 2) * 100}ms` }}>
+                <span className="text-xs font-bold text-primary w-11 shrink-0 pt-0.5 group-hover:glow-primary transition-all duration-300">
                   {event.time}
                 </span>
-                <span className="text-sm text-foreground leading-relaxed">
+                <span className="text-sm text-foreground leading-relaxed group-hover:text-primary transition-colors duration-300">
                   {event.title}
                 </span>
               </div>

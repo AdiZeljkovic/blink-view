@@ -21,6 +21,7 @@ All colors MUST be HSL.
     /* Electric blue accent - the hero of our design */
     --primary: 221 100% 50%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 221 100% 60%;
     
     --secondary: 0 0% 95%;
     --secondary-foreground: 0 0% 7%;
@@ -39,6 +40,17 @@ All colors MUST be HSL.
     --ring: 221 100% 50%;
     
     --radius: 0.5rem;
+    
+    /* Enhanced shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-primary: 0 8px 24px -4px hsl(var(--primary) / 0.2);
+    
+    /* Smooth transitions */
+    --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
     --sidebar-background: 0 0% 98%;
 
@@ -69,6 +81,7 @@ All colors MUST be HSL.
     
     --primary: 221 100% 50%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 221 100% 60%;
     
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 98%;
@@ -85,6 +98,12 @@ All colors MUST be HSL.
     --border: 0 0% 20%;
     --input: 0 0% 20%;
     --ring: 221 100% 50%;
+    
+    /* Enhanced shadows for dark mode */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
+    --shadow-primary: 0 8px 24px -4px hsl(var(--primary) / 0.4);
     --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 221 100% 50%;
@@ -116,6 +135,19 @@ All colors MUST be HSL.
   }
   
   .widget-card {
-    @apply bg-card rounded-lg border border-border p-6 transition-all hover:border-border/60;
+    @apply bg-card rounded-lg border border-border p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-lg;
+    animation: fade-in 0.4s ease-out;
+  }
+  
+  .smooth-hover {
+    @apply transition-all duration-300 ease-out hover:scale-[1.02];
+  }
+  
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
+  }
+  
+  .glow-primary-intense {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary) / 0.1);
   }
 }

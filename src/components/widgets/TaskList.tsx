@@ -32,8 +32,8 @@ const TaskList = () => {
         <h2 className="font-mono-heading text-xl">Današnji Zadaci</h2>
       </div>
       <div className="space-y-3">
-        {tasks.map((task) => (
-          <div key={task.id} className="flex items-start gap-3 group py-1">
+        {tasks.map((task, index) => (
+          <div key={task.id} className="flex items-start gap-3 group py-1 animate-slide-up" style={{ animationDelay: `${index * 100}ms` }}>
             <Checkbox
               id={task.id}
               checked={task.completed}
@@ -43,10 +43,10 @@ const TaskList = () => {
             <label
               htmlFor={task.id}
               className={cn(
-                "flex-1 text-sm cursor-pointer transition-colors leading-relaxed",
+                "flex-1 text-sm cursor-pointer transition-all duration-300 leading-relaxed",
                 task.completed
                   ? "line-through text-muted-foreground"
-                  : "text-foreground group-hover:text-primary"
+                  : "text-foreground group-hover:text-primary group-hover:translate-x-1"
               )}
             >
               {task.text}

@@ -20,16 +20,17 @@ const HomelabApps = () => {
       </div>
       
       <div className="grid grid-cols-4 gap-4">
-        {apps.map((app) => {
+        {apps.map((app, index) => {
           const Icon = app.icon;
           return (
             <a
               key={app.name}
               href={app.url}
-              className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border bg-card hover:bg-secondary transition-colors group"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border bg-card hover:bg-secondary transition-all duration-300 group hover:scale-105 hover:border-primary/30 hover:shadow-lg animate-fade-in"
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              <Icon className={`w-8 h-8 ${app.color} group-hover:scale-110 transition-transform`} />
-              <span className="text-xs font-medium text-foreground text-center">{app.name}</span>
+              <Icon className={`w-8 h-8 ${app.color} group-hover:scale-110 transition-all duration-300`} />
+              <span className="text-xs font-medium text-foreground text-center group-hover:text-primary transition-colors duration-300">{app.name}</span>
             </a>
           );
         })}
