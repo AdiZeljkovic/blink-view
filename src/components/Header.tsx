@@ -10,6 +10,7 @@ const Header = () => {
     { label: "Vijesti", path: "/vijesti" },
     { label: "Kalendar", path: "/kalendar" },
     { label: "Boards", path: "/boards" },
+    { label: "Bookmarks", path: "/bookmarks" },
     { label: "Admin Panel", path: "/admin" }
   ];
 
