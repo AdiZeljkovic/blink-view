@@ -8,6 +8,7 @@ import Gaming from "./pages/Gaming";
 import Tech from "./pages/Tech";
 import Vijesti from "./pages/Vijesti";
 import Kalendar from "./pages/Kalendar";
+import Boards from "./pages/Boards";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/tech" element={<Tech />} />
           <Route path="/vijesti" element={<Vijesti />} />
           <Route path="/kalendar" element={<Kalendar />} />
+          <Route path="/boards" element={<Boards />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
