@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LayoutGrid, Plus, Trash2, GripVertical, Tag, Clock } from "lucide-react";
+import { LayoutGrid, Plus, Trash2, GripVertical, Tag, Clock, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,9 @@ const Boards = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<string>("todo");
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -96,6 +98,26 @@ const Boards = () => {
     setNewTask({ title: "", description: "", priority: "medium", label: "" });
     setIsDialogOpen(false);
     toast.success("Zadatak dodan");
+  };
+
+  const openEditDialog = (task: Task) => {
+    setEditingTask(task);
+    setIsEditDialogOpen(true);
+  };
+
+  const updateTask = () => {
+    if (!editingTask || !editingTask.title.trim()) {
+      toast.error("Unesite naziv zadatka");
+      return;
+    }
+
+    const updated = tasks.map(t => 
+      t.id === editingTask.id ? editingTask : t
+    );
+    saveTasks(updated);
+    setIsEditDialogOpen(false);
+    setEditingTask(null);
+    toast.success("Zadatak ažuriran");
   };
 
   const deleteTask = (id: string) => {
@@ -260,6 +282,79 @@ const Boards = () => {
           </div>
         </div>
 
+        {/* Edit Task Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Uredi Zadatak</DialogTitle>
+            </DialogHeader>
+            {editingTask && (
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Naziv Zadatka</Label>
+                  <Input
+                    id="edit-title"
+                    placeholder="Naziv zadatka..."
+                    value={editingTask.title}
+                    onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Opis</Label>
+                  <Textarea
+                    id="edit-description"
+                    placeholder="Detaljan opis zadatka..."
+                    value={editingTask.description}
+                    onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                    rows={4}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-priority">Prioritet</Label>
+                    <Select
+                      value={editingTask.priority}
+                      onValueChange={(value: Task["priority"]) =>
+                        setEditingTask({ ...editingTask, priority: value })
+                      }
+                    >
+                      <SelectTrigger id="edit-priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Nizak</SelectItem>
+                        <SelectItem value="medium">Srednji</SelectItem>
+                        <SelectItem value="high">Visok</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-label">Label</Label>
+                    <Input
+                      id="edit-label"
+                      placeholder="Feature, Bug..."
+                      value={editingTask.label}
+                      onChange={(e) => setEditingTask({ ...editingTask, label: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={updateTask} className="flex-1">
+                    Sačuvaj Izmjene
+                  </Button>
+                  <Button onClick={() => setIsEditDialogOpen(false)} variant="outline" className="flex-1">
+                    Otkaži
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Kanban Board */}
         <div className="flex gap-4 overflow-x-auto pb-4">
           {columns.map((column, colIndex) => (
@@ -305,7 +400,8 @@ const Boards = () => {
                       key={task.id}
                       draggable
                       onDragStart={() => handleDragStart(task.id)}
-                      className="group cursor-move animate-slide-up"
+                      onClick={() => openEditDialog(task)}
+                      className="group cursor-pointer animate-slide-up"
                       style={{ animationDelay: `${taskIndex * 50}ms` }}
                     >
                       <div className="bg-card border border-border rounded-lg p-4 hover:border-primary/30 hover:shadow-lg transition-all duration-300">
