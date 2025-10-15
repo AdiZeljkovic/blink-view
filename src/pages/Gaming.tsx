@@ -208,11 +208,16 @@ const Gaming = () => {
           
           {/* Gaming News - Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {gamingNews.length > 0 && (
+          {gamingNews.length > 0 && (
               <div className="widget-card">
-                <div className="flex items-center gap-2 mb-6">
-                  <Newspaper className="w-5 h-5 text-primary" />
-                  <h2 className="text-xl font-mono-heading">Gaming Vijesti</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <Newspaper className="w-5 h-5 text-primary" />
+                    <h2 className="text-xl font-mono-heading">Gaming Vijesti</h2>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Prikazano {Math.min(newsLimit, gamingNews.length)} od {gamingNews.length}
+                  </span>
                 </div>
                 
                 <div className="space-y-4">
@@ -245,14 +250,15 @@ const Gaming = () => {
                       </div>
                     </a>
                   ))}
+                  
                   {gamingNews.length > newsLimit && (
                     <Button 
                       onClick={() => setNewsLimit(newsLimit + 10)}
                       variant="outline"
-                      className="w-full gap-2"
+                      className="w-full gap-2 mt-4"
                     >
                       <ChevronDown className="w-4 h-4" />
-                      Učitaj Još
+                      Učitaj Još Vijesti ({gamingNews.length - newsLimit} preostalo)
                     </Button>
                   )}
                 </div>
@@ -262,9 +268,14 @@ const Gaming = () => {
             {/* YouTube Videos */}
             {youtubeVideos.length > 0 && (
               <div className="widget-card">
-                <div className="flex items-center gap-2 mb-6">
-                  <Video className="w-5 h-5 text-primary" />
-                  <h2 className="text-xl font-mono-heading">Najnoviji Gaming Videi</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <Video className="w-5 h-5 text-primary" />
+                    <h2 className="text-xl font-mono-heading">Najnoviji Gaming Videi</h2>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Prikazano {Math.min(videosLimit, youtubeVideos.length)} od {youtubeVideos.length}
+                  </span>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -299,6 +310,7 @@ const Gaming = () => {
                     </a>
                   ))}
                 </div>
+                
                 {youtubeVideos.length > videosLimit && (
                   <Button 
                     onClick={() => setVideosLimit(videosLimit + 8)}
@@ -306,7 +318,7 @@ const Gaming = () => {
                     className="w-full gap-2 mt-4"
                   >
                     <ChevronDown className="w-4 h-4" />
-                    Učitaj Još Videa
+                    Učitaj Još Videa ({youtubeVideos.length - videosLimit} preostalo)
                   </Button>
                 )}
               </div>
@@ -317,9 +329,14 @@ const Gaming = () => {
           {redditPosts.length > 0 && (
             <div className="lg:col-span-1">
               <div className="widget-card sticky top-24">
-                <div className="flex items-center gap-2 mb-6">
-                  <MessageSquare className="w-5 h-5 text-primary" />
-                  <h2 className="text-xl font-mono-heading">Reddit</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-primary" />
+                    <h2 className="text-xl font-mono-heading">Reddit</h2>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {Math.min(redditLimit, redditPosts.length)}/{redditPosts.length}
+                  </span>
                 </div>
                 
                 <div className="space-y-4">
@@ -343,14 +360,15 @@ const Gaming = () => {
                       </div>
                     </a>
                   ))}
+                  
                   {redditPosts.length > redditLimit && (
                     <Button 
                       onClick={() => setRedditLimit(redditLimit + 8)}
                       variant="outline"
-                      className="w-full gap-2"
+                      className="w-full gap-2 mt-4"
                     >
                       <ChevronDown className="w-4 h-4" />
-                      Učitaj Još
+                      Učitaj Još (+{redditPosts.length - redditLimit})
                     </Button>
                   )}
                 </div>
