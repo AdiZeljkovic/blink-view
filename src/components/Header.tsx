@@ -1,11 +1,12 @@
 const Header = () => {
   const navLinks = [
-    "DASHBOARDI",
-    "GAMING",
-    "TECH I VIJESTI",
-    "KALENDAR",
-    "BOARDSI",
-    "ADMIN PANEL"
+    "Dashboard",
+    "Gaming",
+    "Tech",
+    "Vijesti",
+    "Kalendar",
+    "Boards",
+    "Admin Panel"
   ];
 
   return (
