@@ -6,8 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { sr } from "date-fns/locale";
 import { toast } from "sonner";
 
 interface Event {
@@ -26,6 +28,7 @@ const Kalendar = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [eventDate, setEventDate] = useState<Date>(new Date());
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
@@ -56,13 +59,14 @@ const Kalendar = () => {
       id: Date.now().toString(),
       title: newEvent.title,
       description: newEvent.description,
-      date: format(selectedDate, "yyyy-MM-dd"),
+      date: format(eventDate, "yyyy-MM-dd"),
       time: newEvent.time,
       color: `hsl(${Math.random() * 360}, 70%, 50%)`
     };
 
     saveEvents([...events, event]);
     setNewEvent({ title: "", description: "", time: "12:00" });
+    setEventDate(new Date());
     setIsDialogOpen(false);
     toast.success("Događaj dodan");
   };
@@ -102,7 +106,10 @@ const Kalendar = () => {
             <h1 className="text-4xl font-bold">Kalendar</h1>
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (open) setEventDate(selectedDate);
+          }}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="w-4 h-4" />
@@ -124,7 +131,33 @@ const Kalendar = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time">Vrijeme</Label>
+                  <Label htmlFor="event-date">Datum</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !eventDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {eventDate ? format(eventDate, "PPP", { locale: sr }) : "Odaberite datum"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={eventDate}
+                        onSelect={(date) => date && setEventDate(date)}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="time">Vrijeme (24h format)</Label>
                   <Input
                     id="time"
                     type="time"
@@ -141,8 +174,8 @@ const Kalendar = () => {
                     onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   />
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Datum: {format(selectedDate, "dd.MM.yyyy")}
+                <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                  <strong>Odabrani datum:</strong> {format(eventDate, "EEEE, dd. MMMM yyyy", { locale: sr })}
                 </div>
                 <Button onClick={addEvent} className="w-full">
                   Sačuvaj
