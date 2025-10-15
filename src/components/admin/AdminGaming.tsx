@@ -101,6 +101,14 @@ const AdminGaming = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="p-4 bg-muted rounded-lg text-sm space-y-2">
+            <p className="font-semibold">Kako dodati feedove:</p>
+            <ul className="space-y-1 text-muted-foreground">
+              <li><strong>Vijesti:</strong> Kopirajte RSS URL (npr. https://example.com/feed.xml)</li>
+              <li><strong>YouTube:</strong> https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID</li>
+              <li><strong>Reddit:</strong> https://www.reddit.com/r/SUBREDDIT_NAME.json</li>
+            </ul>
+          </div>
           {rssFeeds.map((feed) => (
             <div key={feed.id} className="border rounded-lg p-4 space-y-3">
               <div className="grid grid-cols-3 gap-3">
