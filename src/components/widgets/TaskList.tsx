@@ -16,15 +16,18 @@ const TaskList = () => {
   const [newTaskText, setNewTaskText] = useState("");
 
   useEffect(() => {
-    const savedTasks = storage.getJSON<Task[]>("task-list");
-    if (savedTasks) {
-      setTasks(savedTasks);
-    }
+    const loadTasks = async () => {
+      const savedTasks = await storage.getJSON<Task[]>("task-list");
+      if (savedTasks) {
+        setTasks(savedTasks);
+      }
+    };
+    loadTasks();
   }, []);
 
-  const saveTasks = (updatedTasks: Task[]) => {
+  const saveTasks = async (updatedTasks: Task[]) => {
     setTasks(updatedTasks);
-    storage.setJSON("task-list", updatedTasks);
+    await storage.setJSON("task-list", updatedTasks);
   };
 
   const toggleTask = (id: string) => {

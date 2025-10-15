@@ -1,3 +1,5 @@
+import { getSupabaseClient, isSupabaseConfigured } from './supabase-client';
+
 // Storage utility with multiple fallback mechanisms for data persistence
 class StorageManager {
   private storageAvailable: boolean;
@@ -40,7 +42,29 @@ class StorageManager {
     }
   }
 
-  setItem(key: string, value: string): void {
+  async setItem(key: string, value: string): Promise<void> {
+    // Try Supabase first if configured
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const { error } = await supabase
+            .from('app_storage')
+            .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+          
+          if (!error) {
+            console.log(`[Storage] Saved to Supabase: ${key}`);
+            return;
+          } else {
+            console.warn(`[Storage] Supabase save failed, falling back to localStorage:`, error);
+          }
+        }
+      } catch (e) {
+        console.warn(`[Storage] Supabase error, falling back to localStorage:`, e);
+      }
+    }
+
+    // Fallback to localStorage/sessionStorage/memory
     try {
       if (this.storageType === 'localStorage') {
         localStorage.setItem(key, value);
@@ -54,12 +78,35 @@ class StorageManager {
       }
     } catch (e) {
       console.error(`[Storage] Failed to save ${key}:`, e);
-      // Fallback to memory storage
       this.memoryStorage.set(key, value);
     }
   }
 
-  getItem(key: string): string | null {
+  async getItem(key: string): Promise<string | null> {
+    // Try Supabase first if configured
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('app_storage')
+            .select('value')
+            .eq('key', key)
+            .single();
+          
+          if (!error && data) {
+            console.log(`[Storage] Retrieved from Supabase: ${key}`, 'found');
+            return data.value;
+          } else if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+            console.warn(`[Storage] Supabase retrieve failed, falling back to localStorage:`, error);
+          }
+        }
+      } catch (e) {
+        console.warn(`[Storage] Supabase error, falling back to localStorage:`, e);
+      }
+    }
+
+    // Fallback to localStorage/sessionStorage/memory
     try {
       if (this.storageType === 'localStorage') {
         const value = localStorage.getItem(key);
@@ -111,12 +158,12 @@ class StorageManager {
   }
 
   // Helper method for JSON data
-  setJSON(key: string, value: any): void {
-    this.setItem(key, JSON.stringify(value));
+  async setJSON(key: string, value: any): Promise<void> {
+    await this.setItem(key, JSON.stringify(value));
   }
 
-  getJSON<T>(key: string): T | null {
-    const value = this.getItem(key);
+  async getJSON<T>(key: string): Promise<T | null> {
+    const value = await this.getItem(key);
     if (!value) return null;
     
     try {

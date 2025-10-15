@@ -14,14 +14,14 @@ interface Note {
 const QuickNotes = () => {
   const [note, setNote] = useState("");
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!note.trim()) {
       toast.error("Bilješka ne može biti prazna");
       return;
     }
     
     // Get existing notes
-    const notes: Note[] = storage.getJSON<Note[]>("quick-notes-list") || [];
+    const notes: Note[] = await storage.getJSON<Note[]>("quick-notes-list") || [];
     
     // Add new note
     const newNote: Note = {
@@ -33,7 +33,7 @@ const QuickNotes = () => {
     notes.unshift(newNote); // Add to beginning
     
     // Save to storage
-    storage.setJSON("quick-notes-list", notes);
+    await storage.setJSON("quick-notes-list", notes);
     
     // Clear the textarea
     setNote("");
