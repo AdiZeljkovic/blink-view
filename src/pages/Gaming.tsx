@@ -11,6 +11,13 @@ interface FeedItem {
   thumbnail?: string;
 }
 
+interface RSSFeed {
+  id: string;
+  name: string;
+  url: string;
+  type: "news" | "youtube" | "reddit";
+}
+
 const Gaming = () => {
   const [gamingNews, setGamingNews] = useState<FeedItem[]>([]);
   const [redditPosts, setRedditPosts] = useState<FeedItem[]>([]);
@@ -20,8 +27,13 @@ const Gaming = () => {
   const [newsLimit, setNewsLimit] = useState(10);
   const [videosLimit, setVideosLimit] = useState(8);
   const [redditLimit, setRedditLimit] = useState(8);
+  const [pageTitle, setPageTitle] = useState("Gaming Hub");
 
   useEffect(() => {
+    // Load settings from localStorage
+    const savedTitle = localStorage.getItem("gaming-widget-title");
+    if (savedTitle) setPageTitle(savedTitle);
+    
     fetchGamingFeeds();
     
     // Auto-refresh every 5 minutes
@@ -37,78 +49,102 @@ const Gaming = () => {
     setRefreshing(!silent);
     
     try {
-      // Fetch gaming news from multiple sources via RSS2JSON
-      const newsPromises = [
-        fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.ign.com/feed.xml').then(r => r.json()),
-        fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.polygon.com/rss/index.xml').then(r => r.json()),
+      // Load feeds from localStorage or use defaults
+      const savedFeeds = localStorage.getItem("gaming-rss-feeds");
+      const feeds: RSSFeed[] = savedFeeds ? JSON.parse(savedFeeds) : [
+        { id: "1", name: "IGN", url: "https://www.ign.com/feed.xml", type: "news" },
+        { id: "2", name: "Polygon", url: "https://www.polygon.com/rss/index.xml", type: "news" },
+        { id: "3", name: "r/gaming", url: "https://www.reddit.com/r/gaming.json", type: "reddit" },
       ];
 
-      // Fetch Reddit gaming posts
-      const redditPromise = fetch('https://www.reddit.com/r/gaming.json?limit=10')
-        .then(r => r.json());
+      const newsFeeds = feeds.filter(f => f.type === "news");
+      const redditFeeds = feeds.filter(f => f.type === "reddit");
+      const youtubeFeeds = feeds.filter(f => f.type === "youtube");
 
-      // Fetch YouTube gaming channels (using RSS feeds)
-      const youtubePromises = [
-        fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.youtube.com/feeds/videos.xml?channel_id=UCXuqSBlHAE6Xw-yeJA0Tunw').then(r => r.json()), // Linus Tech Tips
-        fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.youtube.com/feeds/videos.xml?channel_id=UCbu2SsF-Or3Rsn3NxqODImw').then(r => r.json()), // GameSpot
-      ];
+      // Fetch news feeds
+      const newsPromises = newsFeeds.map(feed =>
+        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`)
+          .then(r => r.json())
+          .then(data => ({ ...data, feedName: feed.name }))
+          .catch(() => ({ items: [], feedName: feed.name }))
+      );
 
-      const [newsResults, redditData, youtubeResults] = await Promise.all([
+      // Fetch Reddit posts
+      const redditPromises = redditFeeds.map(feed => {
+        const url = feed.url.includes('.json') ? feed.url : feed.url + '.json';
+        return fetch(url + '?limit=10')
+          .then(r => r.json())
+          .then(data => ({ ...data, feedName: feed.name }))
+          .catch(() => ({ data: { children: [] }, feedName: feed.name }));
+      });
+
+      // Fetch YouTube videos
+      const youtubePromises = youtubeFeeds.map(feed =>
+        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`)
+          .then(r => r.json())
+          .then(data => ({ ...data, feedName: feed.name }))
+          .catch(() => ({ items: [], feedName: feed.name }))
+      );
+
+      const [newsResults, redditResults, youtubeResults] = await Promise.all([
         Promise.all(newsPromises),
-        redditPromise,
+        Promise.all(redditPromises),
         Promise.all(youtubePromises)
       ]);
 
-      // Process gaming news
+      // Process news
       const allNews: FeedItem[] = [];
-      newsResults.forEach((result, index) => {
+      newsResults.forEach((result: any) => {
         if (result.items) {
-          const source = index === 0 ? 'IGN' : 'Polygon';
           result.items.slice(0, 5).forEach((item: any) => {
             allNews.push({
               title: item.title,
               link: item.link,
               pubDate: item.pubDate,
-              source: source,
+              source: result.feedName,
               thumbnail: item.thumbnail || item.enclosure?.link
             });
           });
         }
       });
-      setGamingNews(allNews.slice(0, 10));
+      setGamingNews(allNews);
 
       // Process Reddit posts
-      if (redditData?.data?.children) {
-        const posts: FeedItem[] = redditData.data.children
-          .filter((child: any) => !child.data.stickied)
-          .slice(0, 8)
-          .map((child: any) => ({
-            title: child.data.title,
-            link: `https://reddit.com${child.data.permalink}`,
-            pubDate: new Date(child.data.created_utc * 1000).toISOString(),
-            source: `r/${child.data.subreddit}`,
-            thumbnail: child.data.thumbnail !== 'self' && child.data.thumbnail !== 'default' ? child.data.thumbnail : undefined
-          }));
-        setRedditPosts(posts);
-      }
+      const allReddit: FeedItem[] = [];
+      redditResults.forEach((result: any) => {
+        if (result?.data?.children) {
+          result.data.children
+            .filter((child: any) => !child.data.stickied)
+            .slice(0, 8)
+            .forEach((child: any) => {
+              allReddit.push({
+                title: child.data.title,
+                link: `https://reddit.com${child.data.permalink}`,
+                pubDate: new Date(child.data.created_utc * 1000).toISOString(),
+                source: result.feedName,
+                thumbnail: child.data.thumbnail !== 'self' && child.data.thumbnail !== 'default' ? child.data.thumbnail : undefined
+              });
+            });
+        }
+      });
+      setRedditPosts(allReddit);
 
       // Process YouTube videos
       const allVideos: FeedItem[] = [];
-      youtubeResults.forEach((result, index) => {
+      youtubeResults.forEach((result: any) => {
         if (result.items) {
-          const source = index === 0 ? 'Linus Tech Tips' : 'GameSpot';
           result.items.slice(0, 4).forEach((item: any) => {
             allVideos.push({
               title: item.title,
               link: item.link,
               pubDate: item.pubDate,
-              source: source,
+              source: result.feedName,
               thumbnail: item.thumbnail
             });
           });
         }
       });
-      setYoutubeVideos(allVideos.slice(0, 8));
+      setYoutubeVideos(allVideos);
 
     } catch (error) {
       console.error('Error fetching gaming feeds:', error);
@@ -154,7 +190,7 @@ const Gaming = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <Gamepad2 className="w-8 h-8 text-primary" />
-            <h1 className="text-4xl font-bold">Gaming Hub</h1>
+            <h1 className="text-4xl font-bold">{pageTitle}</h1>
           </div>
           <Button 
             onClick={handleRefresh} 
@@ -172,146 +208,155 @@ const Gaming = () => {
           
           {/* Gaming News - Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="widget-card">
-              <div className="flex items-center gap-2 mb-6">
-                <Newspaper className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-mono-heading">Gaming Vijesti</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {gamingNews.slice(0, newsLimit).map((item, index) => (
-                  <a
-                    key={index}
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex gap-4">
-                      {item.thumbnail && (
-                        <img 
-                          src={item.thumbnail} 
-                          alt={item.title}
-                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0 group-hover:shadow-lg transition-all duration-300"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                          {item.title}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs font-semibold text-primary">{item.source}</span>
-                          <span className="text-xs text-muted-foreground">{formatDate(item.pubDate)}</span>
+            {gamingNews.length > 0 && (
+              <div className="widget-card">
+                <div className="flex items-center gap-2 mb-6">
+                  <Newspaper className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-mono-heading">Gaming Vijesti</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  {gamingNews.slice(0, newsLimit).map((item, index) => (
+                    <a
+                      key={index}
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex gap-4">
+                        {item.thumbnail && (
+                          <img 
+                            src={item.thumbnail} 
+                            alt={item.title}
+                            className="w-24 h-24 object-cover rounded-lg flex-shrink-0 group-hover:shadow-lg transition-all duration-300"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                            {item.title}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs font-semibold text-primary">{item.source}</span>
+                            <span className="text-xs text-muted-foreground">{formatDate(item.pubDate)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </a>
-                ))}
-                {gamingNews.length > newsLimit && (
+                    </a>
+                  ))}
+                  {gamingNews.length > newsLimit && (
+                    <Button 
+                      onClick={() => setNewsLimit(newsLimit + 10)}
+                      variant="outline"
+                      className="w-full gap-2"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                      Učitaj Još
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* YouTube Videos */}
+            {youtubeVideos.length > 0 && (
+              <div className="widget-card">
+                <div className="flex items-center gap-2 mb-6">
+                  <Video className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-mono-heading">Najnoviji Gaming Videi</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {youtubeVideos.slice(0, videosLimit).map((video, index) => (
+                    <a
+                      key={index}
+                      href={video.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group animate-scale-in"
+                      style={{ animationDelay: `${index * 75}ms` }}
+                    >
+                      <div className="space-y-2">
+                        {video.thumbnail && (
+                          <div className="relative overflow-hidden rounded-lg aspect-video bg-muted">
+                            <img 
+                              src={video.thumbnail} 
+                              alt={video.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+                          </div>
+                        )}
+                        <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                          {video.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-primary">{video.source}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(video.pubDate)}</span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+                {youtubeVideos.length > videosLimit && (
                   <Button 
-                    onClick={() => setNewsLimit(newsLimit + 10)}
+                    onClick={() => setVideosLimit(videosLimit + 8)}
                     variant="outline"
-                    className="w-full gap-2"
+                    className="w-full gap-2 mt-4"
                   >
                     <ChevronDown className="w-4 h-4" />
-                    Učitaj Još
+                    Učitaj Još Videa
                   </Button>
                 )}
               </div>
-            </div>
-
-            {/* YouTube Videos */}
-            <div className="widget-card">
-              <div className="flex items-center gap-2 mb-6">
-                <Video className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-mono-heading">Najnoviji Gaming Videi</h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {youtubeVideos.slice(0, videosLimit).map((video, index) => (
-                  <a
-                    key={index}
-                    href={video.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group animate-scale-in"
-                    style={{ animationDelay: `${index * 75}ms` }}
-                  >
-                    <div className="space-y-2">
-                      {video.thumbnail && (
-                        <div className="relative overflow-hidden rounded-lg aspect-video bg-muted">
-                          <img 
-                            src={video.thumbnail} 
-                            alt={video.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
-                        </div>
-                      )}
-                      <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                        {video.title}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-primary">{video.source}</span>
-                        <span className="text-xs text-muted-foreground">{formatDate(video.pubDate)}</span>
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-              {youtubeVideos.length > videosLimit && (
-                <Button 
-                  onClick={() => setVideosLimit(videosLimit + 8)}
-                  variant="outline"
-                  className="w-full gap-2 mt-4"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                  Učitaj Još Videa
-                </Button>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Reddit Feed - Right Column */}
-          <div className="lg:col-span-1">
-            <div className="widget-card sticky top-24">
-              <div className="flex items-center gap-2 mb-6">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-mono-heading">r/gaming</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {redditPosts.slice(0, redditLimit).map((post, index) => (
-                  <a
-                    key={index}
-                    href={post.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
-                    style={{ animationDelay: `${index * 75}ms` }}
-                  >
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                        {post.title}
-                      </h3>
-                      <span className="text-xs text-muted-foreground">{formatDate(post.pubDate)}</span>
-                    </div>
-                  </a>
-                ))}
-                {redditPosts.length > redditLimit && (
-                  <Button 
-                    onClick={() => setRedditLimit(redditLimit + 8)}
-                    variant="outline"
-                    className="w-full gap-2"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                    Učitaj Još
-                  </Button>
-                )}
+          {redditPosts.length > 0 && (
+            <div className="lg:col-span-1">
+              <div className="widget-card sticky top-24">
+                <div className="flex items-center gap-2 mb-6">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-mono-heading">Reddit</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  {redditPosts.slice(0, redditLimit).map((post, index) => (
+                    <a
+                      key={index}
+                      href={post.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
+                      style={{ animationDelay: `${index * 75}ms` }}
+                    >
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                          {post.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-primary">{post.source}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(post.pubDate)}</span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                  {redditPosts.length > redditLimit && (
+                    <Button 
+                      onClick={() => setRedditLimit(redditLimit + 8)}
+                      variant="outline"
+                      className="w-full gap-2"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                      Učitaj Još
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>

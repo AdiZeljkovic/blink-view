@@ -12,6 +12,13 @@ interface FeedItem {
   description?: string;
 }
 
+interface RSSFeed {
+  id: string;
+  name: string;
+  url: string;
+  type: "world" | "regional" | "reddit";
+}
+
 const Vijesti = () => {
   const [worldNews, setWorldNews] = useState<FeedItem[]>([]);
   const [regionalNews, setRegionalNews] = useState<FeedItem[]>([]);
@@ -21,8 +28,12 @@ const Vijesti = () => {
   const [worldLimit, setWorldLimit] = useState(10);
   const [regionalLimit, setRegionalLimit] = useState(10);
   const [redditLimit, setRedditLimit] = useState(8);
+  const [pageTitle, setPageTitle] = useState("Vijesti");
 
   useEffect(() => {
+    const savedTitle = localStorage.getItem("vijesti-widget-title");
+    if (savedTitle) setPageTitle(savedTitle);
+    
     fetchNewsFeeds();
     const interval = setInterval(() => fetchNewsFeeds(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
@@ -33,80 +44,99 @@ const Vijesti = () => {
     setRefreshing(!silent);
     
     try {
-      // Fetch world news from multiple sources via RSS2JSON
-      const worldNewsPromises = [
-        fetch('https://api.rss2json.com/v1/api.json?rss_url=http://feeds.bbci.co.uk/news/world/rss.xml').then(r => r.json()),
-        fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.aljazeera.com/xml/rss/all.xml').then(r => r.json()),
+      const savedFeeds = localStorage.getItem("vijesti-rss-feeds");
+      const feeds: RSSFeed[] = savedFeeds ? JSON.parse(savedFeeds) : [
+        { id: "1", name: "BBC News", url: "http://feeds.bbci.co.uk/news/world/rss.xml", type: "world" },
+        { id: "2", name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", type: "world" },
+        { id: "3", name: "Klix.ba", url: "https://www.klix.ba/rss", type: "regional" },
+        { id: "4", name: "Blic.rs", url: "https://www.blic.rs/rss", type: "regional" },
+        { id: "5", name: "r/worldnews", url: "https://www.reddit.com/r/worldnews.json", type: "reddit" },
       ];
 
-      // Fetch regional/Balkan news
-      const regionalNewsPromises = [
-        fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.klix.ba/rss').then(r => r.json()),
-        fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.blic.rs/rss').then(r => r.json()),
-      ];
+      const worldFeeds = feeds.filter(f => f.type === "world");
+      const regionalFeeds = feeds.filter(f => f.type === "regional");
+      const redditFeeds = feeds.filter(f => f.type === "reddit");
 
-      // Fetch Reddit world news posts
-      const redditPromise = fetch('https://www.reddit.com/r/worldnews.json?limit=10')
-        .then(r => r.json());
+      const worldPromises = worldFeeds.map(feed =>
+        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`)
+          .then(r => r.json())
+          .then(data => ({ ...data, feedName: feed.name }))
+          .catch(() => ({ items: [], feedName: feed.name }))
+      );
 
-      const [worldResults, regionalResults, redditData] = await Promise.all([
-        Promise.all(worldNewsPromises),
-        Promise.all(regionalNewsPromises),
-        redditPromise
+      const regionalPromises = regionalFeeds.map(feed =>
+        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`)
+          .then(r => r.json())
+          .then(data => ({ ...data, feedName: feed.name }))
+          .catch(() => ({ items: [], feedName: feed.name }))
+      );
+
+      const redditPromises = redditFeeds.map(feed => {
+        const url = feed.url.includes('.json') ? feed.url : feed.url + '.json';
+        return fetch(url + '?limit=10')
+          .then(r => r.json())
+          .then(data => ({ ...data, feedName: feed.name }))
+          .catch(() => ({ data: { children: [] }, feedName: feed.name }));
+      });
+
+      const [worldResults, regionalResults, redditResults] = await Promise.all([
+        Promise.all(worldPromises),
+        Promise.all(regionalPromises),
+        Promise.all(redditPromises)
       ]);
 
-      // Process world news
       const allWorldNews: FeedItem[] = [];
-      worldResults.forEach((result, index) => {
+      worldResults.forEach((result: any) => {
         if (result.items) {
-          const source = index === 0 ? 'BBC News' : 'Al Jazeera';
           result.items.slice(0, 5).forEach((item: any) => {
             allWorldNews.push({
               title: item.title,
               link: item.link,
               pubDate: item.pubDate,
-              source: source,
+              source: result.feedName,
               thumbnail: item.thumbnail || item.enclosure?.link,
               description: item.description
             });
           });
         }
       });
-      setWorldNews(allWorldNews.slice(0, 10));
+      setWorldNews(allWorldNews);
 
-      // Process regional news
       const allRegionalNews: FeedItem[] = [];
-      regionalResults.forEach((result, index) => {
+      regionalResults.forEach((result: any) => {
         if (result.items) {
-          const source = index === 0 ? 'Klix.ba' : 'Blic.rs';
           result.items.slice(0, 5).forEach((item: any) => {
             allRegionalNews.push({
               title: item.title,
               link: item.link,
               pubDate: item.pubDate,
-              source: source,
+              source: result.feedName,
               thumbnail: item.thumbnail || item.enclosure?.link,
               description: item.description
             });
           });
         }
       });
-      setRegionalNews(allRegionalNews.slice(0, 10));
+      setRegionalNews(allRegionalNews);
 
-      // Process Reddit posts
-      if (redditData?.data?.children) {
-        const posts: FeedItem[] = redditData.data.children
-          .filter((child: any) => !child.data.stickied)
-          .slice(0, 8)
-          .map((child: any) => ({
-            title: child.data.title,
-            link: `https://reddit.com${child.data.permalink}`,
-            pubDate: new Date(child.data.created_utc * 1000).toISOString(),
-            source: `r/${child.data.subreddit}`,
-            thumbnail: child.data.thumbnail !== 'self' && child.data.thumbnail !== 'default' ? child.data.thumbnail : undefined
-          }));
-        setRedditPosts(posts);
-      }
+      const allReddit: FeedItem[] = [];
+      redditResults.forEach((result: any) => {
+        if (result?.data?.children) {
+          result.data.children
+            .filter((child: any) => !child.data.stickied)
+            .slice(0, 8)
+            .forEach((child: any) => {
+              allReddit.push({
+                title: child.data.title,
+                link: `https://reddit.com${child.data.permalink}`,
+                pubDate: new Date(child.data.created_utc * 1000).toISOString(),
+                source: result.feedName,
+                thumbnail: child.data.thumbnail !== 'self' && child.data.thumbnail !== 'default' ? child.data.thumbnail : undefined
+              });
+            });
+        }
+      });
+      setRedditPosts(allReddit);
 
     } catch (error) {
       console.error('Error fetching news feeds:', error);
@@ -148,11 +178,10 @@ const Vijesti = () => {
   return (
     <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <Globe className="w-8 h-8 text-primary" />
-            <h1 className="text-4xl font-bold">Vijesti</h1>
+            <h1 className="text-4xl font-bold">{pageTitle}</h1>
           </div>
           <Button 
             onClick={handleRefresh} 
@@ -165,139 +194,142 @@ const Vijesti = () => {
           </Button>
         </div>
 
-        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* World News - Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="widget-card">
-              <div className="flex items-center gap-2 mb-6">
-                <Globe className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-mono-heading">Svijet</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {worldNews.slice(0, worldLimit).map((item, index) => (
-                  <a
-                    key={index}
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex gap-4">
-                      {item.thumbnail && (
-                        <img 
-                          src={item.thumbnail} 
-                          alt={item.title}
-                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0 group-hover:shadow-lg transition-all duration-300"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                          {item.title}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs font-semibold text-primary">{item.source}</span>
-                          <span className="text-xs text-muted-foreground">{formatDate(item.pubDate)}</span>
+            {worldNews.length > 0 && (
+              <div className="widget-card">
+                <div className="flex items-center gap-2 mb-6">
+                  <Globe className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-mono-heading">Svijet</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  {worldNews.slice(0, worldLimit).map((item, index) => (
+                    <a
+                      key={index}
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex gap-4">
+                        {item.thumbnail && (
+                          <img 
+                            src={item.thumbnail} 
+                            alt={item.title}
+                            className="w-24 h-24 object-cover rounded-lg flex-shrink-0 group-hover:shadow-lg transition-all duration-300"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                            {item.title}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs font-semibold text-primary">{item.source}</span>
+                            <span className="text-xs text-muted-foreground">{formatDate(item.pubDate)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </a>
-                ))}
-                {worldNews.length > worldLimit && (
-                  <Button onClick={() => setWorldLimit(worldLimit + 10)} variant="outline" className="w-full gap-2">
-                    <ChevronDown className="w-4 h-4" />
-                    Učitaj Još
-                  </Button>
-                )}
+                    </a>
+                  ))}
+                  {worldNews.length > worldLimit && (
+                    <Button onClick={() => setWorldLimit(worldLimit + 10)} variant="outline" className="w-full gap-2">
+                      <ChevronDown className="w-4 h-4" />
+                      Učitaj Još
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Regional News */}
-            <div className="widget-card">
-              <div className="flex items-center gap-2 mb-6">
-                <Newspaper className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-mono-heading">Regija</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {regionalNews.slice(0, regionalLimit).map((item, index) => (
-                  <a
-                    key={index}
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex gap-4">
-                      {item.thumbnail && (
-                        <img 
-                          src={item.thumbnail} 
-                          alt={item.title}
-                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0 group-hover:shadow-lg transition-all duration-300"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                          {item.title}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs font-semibold text-primary">{item.source}</span>
-                          <span className="text-xs text-muted-foreground">{formatDate(item.pubDate)}</span>
+            {regionalNews.length > 0 && (
+              <div className="widget-card">
+                <div className="flex items-center gap-2 mb-6">
+                  <Newspaper className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-mono-heading">Regija</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  {regionalNews.slice(0, regionalLimit).map((item, index) => (
+                    <a
+                      key={index}
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex gap-4">
+                        {item.thumbnail && (
+                          <img 
+                            src={item.thumbnail} 
+                            alt={item.title}
+                            className="w-24 h-24 object-cover rounded-lg flex-shrink-0 group-hover:shadow-lg transition-all duration-300"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                            {item.title}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs font-semibold text-primary">{item.source}</span>
+                            <span className="text-xs text-muted-foreground">{formatDate(item.pubDate)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </a>
-                ))}
-                {regionalNews.length > regionalLimit && (
-                  <Button onClick={() => setRegionalLimit(regionalLimit + 10)} variant="outline" className="w-full gap-2">
-                    <ChevronDown className="w-4 h-4" />
-                    Učitaj Još
-                  </Button>
-                )}
+                    </a>
+                  ))}
+                  {regionalNews.length > regionalLimit && (
+                    <Button onClick={() => setRegionalLimit(regionalLimit + 10)} variant="outline" className="w-full gap-2">
+                      <ChevronDown className="w-4 h-4" />
+                      Učitaj Još
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Reddit Feed - Right Column */}
-          <div className="lg:col-span-1">
-            <div className="widget-card sticky top-24">
-              <div className="flex items-center gap-2 mb-6">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-mono-heading">r/worldnews</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {redditPosts.slice(0, redditLimit).map((post, index) => (
-                  <a
-                    key={index}
-                    href={post.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
-                    style={{ animationDelay: `${index * 75}ms` }}
-                  >
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                        {post.title}
-                      </h3>
-                      <span className="text-xs text-muted-foreground">{formatDate(post.pubDate)}</span>
-                    </div>
-                  </a>
-                ))}
-                {redditPosts.length > redditLimit && (
-                  <Button onClick={() => setRedditLimit(redditLimit + 8)} variant="outline" className="w-full gap-2">
-                    <ChevronDown className="w-4 h-4" />
-                    Učitaj Još
-                  </Button>
-                )}
+          {redditPosts.length > 0 && (
+            <div className="lg:col-span-1">
+              <div className="widget-card sticky top-24">
+                <div className="flex items-center gap-2 mb-6">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-mono-heading">Reddit</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  {redditPosts.slice(0, redditLimit).map((post, index) => (
+                    <a
+                      key={index}
+                      href={post.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block group animate-slide-up hover:translate-x-1 transition-all duration-300"
+                      style={{ animationDelay: `${index * 75}ms` }}
+                    >
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                          {post.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-primary">{post.source}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(post.pubDate)}</span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                  {redditPosts.length > redditLimit && (
+                    <Button onClick={() => setRedditLimit(redditLimit + 8)} variant="outline" className="w-full gap-2">
+                      <ChevronDown className="w-4 h-4" />
+                      Učitaj Još
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-
+          )}
         </div>
       </div>
     </div>
