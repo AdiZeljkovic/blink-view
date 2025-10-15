@@ -15,10 +15,10 @@ const Index = () => {
       <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       
       {activeTab === "fokus" && (
-        <main className="flex-1 container mx-auto px-8 py-16">
-          <div className="max-w-7xl mx-auto space-y-16">
+        <main className="flex-1 container mx-auto px-6 py-8 max-w-[1400px]">
+          <div className="space-y-12">
             {/* Header with Clock */}
-            <section className="py-12">
+            <section className="py-8">
               <Clock />
             </section>
 
@@ -27,16 +27,16 @@ const Index = () => {
               <SearchBar />
             </section>
 
-            {/* Widgets Grid */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-16 pt-8">
+            {/* Widgets Grid - Compact 2-column layout */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
               {/* Left Column */}
-              <div className="space-y-16">
+              <div className="space-y-6">
                 <TaskList />
                 <Calendar />
               </div>
 
               {/* Right Column */}
-              <div className="space-y-16">
+              <div className="space-y-6">
                 <Weather />
                 <QuickNotes />
               </div>
@@ -46,7 +46,7 @@ const Index = () => {
       )}
 
       {activeTab !== "fokus" && (
-        <main className="flex-1 container mx-auto px-8 py-16">
+        <main className="flex-1 container mx-auto px-6 py-16">
           <div className="max-w-7xl mx-auto text-center">
             <h2 className="font-mono-heading text-3xl mb-4">
               {activeTab === "homelab" && "HOMELAB"}

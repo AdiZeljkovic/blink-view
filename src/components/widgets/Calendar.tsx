@@ -1,3 +1,5 @@
+import { CalendarDays } from "lucide-react";
+
 interface CalendarEvent {
   id: string;
   time: string;
@@ -26,21 +28,24 @@ const Calendar = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <h2 className="font-mono-heading text-2xl">Kalendar</h2>
+    <div className="widget-card space-y-5">
+      <div className="flex items-center gap-3">
+        <CalendarDays className="h-5 w-5 text-primary" />
+        <h2 className="font-mono-heading text-xl">Kalendar</h2>
+      </div>
       
-      <div className="space-y-6">
+      <div className="space-y-5">
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-3 capitalize">
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
             {today}
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {events.filter(e => e.isToday).map((event) => (
-              <div key={event.id} className="flex gap-4">
-                <span className="text-sm font-medium text-primary w-12 shrink-0">
+              <div key={event.id} className="flex gap-3 items-start">
+                <span className="text-xs font-bold text-primary w-11 shrink-0 pt-0.5">
                   {event.time}
                 </span>
-                <span className="text-sm text-foreground">
+                <span className="text-sm text-foreground leading-relaxed">
                   {event.title}
                 </span>
               </div>
@@ -49,16 +54,16 @@ const Calendar = () => {
         </div>
 
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-3 capitalize">
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
             {tomorrow}
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {events.filter(e => !e.isToday).map((event) => (
-              <div key={event.id} className="flex gap-4">
-                <span className="text-sm font-medium text-primary w-12 shrink-0">
+              <div key={event.id} className="flex gap-3 items-start">
+                <span className="text-xs font-bold text-primary w-11 shrink-0 pt-0.5">
                   {event.time}
                 </span>
-                <span className="text-sm text-foreground">
+                <span className="text-sm text-foreground leading-relaxed">
                   {event.title}
                 </span>
               </div>

@@ -14,12 +14,12 @@ const SearchBar = () => {
   return (
     <form onSubmit={handleSearch} className="w-full max-w-2xl mx-auto">
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
           name="search"
           placeholder="Pretraži Google, YouTube, Reddit..."
-          className="w-full pl-12 pr-4 py-6 text-base border-border bg-card hover:border-primary/50 focus-visible:ring-primary transition-colors"
+          className="w-full pl-11 pr-4 py-5 text-sm border-border bg-card hover:border-primary/40 focus-visible:ring-primary focus-visible:border-primary transition-all"
         />
       </div>
     </form>

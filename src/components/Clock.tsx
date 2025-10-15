@@ -24,12 +24,12 @@ const Clock = () => {
   });
 
   return (
-    <div className="text-center space-y-4">
-      <div className="font-mono-heading text-8xl tracking-tight">
+    <div className="text-center space-y-3">
+      <div className="font-mono-heading text-7xl md:text-8xl tracking-tight">
         {formattedTime}
       </div>
-      <p className="text-xl text-muted-foreground">
-        {getGreeting()}, <span className="text-foreground">Korisnik</span>
+      <p className="text-lg text-muted-foreground">
+        {getGreeting()}, <span className="text-foreground font-medium">Korisnik</span>
       </p>
     </div>
   );

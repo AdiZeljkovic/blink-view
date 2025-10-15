@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Task {
@@ -25,21 +26,24 @@ const TaskList = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="font-mono-heading text-2xl">Današnji Zadaci</h2>
-      <div className="space-y-4">
+    <div className="widget-card space-y-5">
+      <div className="flex items-center gap-3">
+        <CheckSquare className="h-5 w-5 text-primary" />
+        <h2 className="font-mono-heading text-xl">Današnji Zadaci</h2>
+      </div>
+      <div className="space-y-3">
         {tasks.map((task) => (
-          <div key={task.id} className="flex items-start gap-3 group">
+          <div key={task.id} className="flex items-start gap-3 group py-1">
             <Checkbox
               id={task.id}
               checked={task.completed}
               onCheckedChange={() => toggleTask(task.id)}
-              className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              className="mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
             />
             <label
               htmlFor={task.id}
               className={cn(
-                "flex-1 text-base cursor-pointer transition-colors",
+                "flex-1 text-sm cursor-pointer transition-colors leading-relaxed",
                 task.completed
                   ? "line-through text-muted-foreground"
                   : "text-foreground group-hover:text-primary"

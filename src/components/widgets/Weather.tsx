@@ -1,4 +1,4 @@
-import { Cloud, Sun, CloudRain } from "lucide-react";
+import { Cloud, Sun, CloudRain, CloudSun } from "lucide-react";
 
 const Weather = () => {
   // In a real app, this would fetch from a weather API
@@ -15,16 +15,19 @@ const Weather = () => {
   }[weatherData.condition];
 
   return (
-    <div className="space-y-6">
-      <h2 className="font-mono-heading text-2xl">Vrijeme</h2>
+    <div className="widget-card space-y-5">
+      <div className="flex items-center gap-3">
+        <CloudSun className="h-5 w-5 text-primary" />
+        <h2 className="font-mono-heading text-xl">Vrijeme</h2>
+      </div>
       
-      <div className="flex items-center gap-6">
-        <WeatherIcon className="h-12 w-12 text-foreground stroke-[1.5]" />
+      <div className="flex items-center gap-5">
+        <WeatherIcon className="h-10 w-10 text-foreground stroke-[1.5]" />
         <div>
-          <div className="text-4xl font-medium">
+          <div className="text-3xl font-semibold font-mono-heading tracking-tight">
             {weatherData.temperature}°C
           </div>
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-sm text-muted-foreground mt-0.5">
             {weatherData.city}
           </div>
         </div>

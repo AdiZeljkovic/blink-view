@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
 import { toast } from "sonner";
 
 const QuickNotes = () => {
@@ -20,19 +21,22 @@ const QuickNotes = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <h2 className="font-mono-heading text-2xl">Brze Bilješke</h2>
+    <div className="widget-card space-y-5">
+      <div className="flex items-center gap-3">
+        <FileText className="h-5 w-5 text-primary" />
+        <h2 className="font-mono-heading text-xl">Brze Bilješke</h2>
+      </div>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Zapiši bilo šta..."
-          className="min-h-[120px] resize-none border-border bg-card focus-visible:ring-primary"
+          className="min-h-[100px] resize-none border-border bg-background text-sm focus-visible:ring-primary"
         />
         <Button 
           onClick={handleSave}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm"
         >
           Sačuvaj
         </Button>
