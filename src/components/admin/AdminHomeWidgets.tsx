@@ -5,21 +5,27 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Key } from "lucide-react";
+import AdminRSSFeeds from "./AdminRSSFeeds";
+import AdminRedditFeeds from "./AdminRedditFeeds";
+import AdminYouTubeFeeds from "./AdminYouTubeFeeds";
 
 const AdminHomeWidgets = () => {
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [homelabApps, setHomelabApps] = useState<any[]>([]);
   const [weatherCity, setWeatherCity] = useState("Sarajevo");
+  const [weatherApiKey, setWeatherApiKey] = useState("");
 
   useEffect(() => {
     const savedBookmarks = localStorage.getItem("widget-bookmarks");
     const savedApps = localStorage.getItem("homelab-apps");
     const savedCity = localStorage.getItem("weather-city");
+    const savedApiKey = localStorage.getItem("weather-api-key");
     
     if (savedBookmarks) setBookmarks(JSON.parse(savedBookmarks));
     if (savedApps) setHomelabApps(JSON.parse(savedApps));
     if (savedCity) setWeatherCity(savedCity);
+    if (savedApiKey) setWeatherApiKey(savedApiKey);
   }, []);
 
   const addBookmark = () => {
@@ -64,9 +70,10 @@ const AdminHomeWidgets = () => {
     toast.success("Aplikacija obrisana");
   };
 
-  const saveWeatherCity = () => {
+  const saveWeatherSettings = () => {
     localStorage.setItem("weather-city", weatherCity);
-    toast.success("Grad sačuvan");
+    localStorage.setItem("weather-api-key", weatherApiKey);
+    toast.success("Postavke vremenskog widgeta sačuvane");
   };
 
   return (
@@ -74,7 +81,7 @@ const AdminHomeWidgets = () => {
       <Card>
         <CardHeader>
           <CardTitle>Vremenska Prognoza</CardTitle>
-          <CardDescription>Uredite postavke vremenskog widgeta</CardDescription>
+          <CardDescription>Uredite postavke vremenskog widgeta - koristite OpenWeatherMap ili WeatherAPI</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -85,7 +92,22 @@ const AdminHomeWidgets = () => {
               placeholder="Sarajevo"
             />
           </div>
-          <Button onClick={saveWeatherCity}>Sačuvaj</Button>
+          <div>
+            <Label className="flex items-center gap-2">
+              <Key className="w-4 h-4" />
+              API Ključ (OpenWeatherMap ili WeatherAPI)
+            </Label>
+            <Input
+              type="password"
+              value={weatherApiKey}
+              onChange={(e) => setWeatherApiKey(e.target.value)}
+              placeholder="Unesite API ključ..."
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Dobavite besplatan API ključ sa openweathermap.org ili weatherapi.com
+            </p>
+          </div>
+          <Button onClick={saveWeatherSettings}>Sačuvaj Postavke</Button>
         </CardContent>
       </Card>
 
@@ -184,6 +206,10 @@ const AdminHomeWidgets = () => {
           ))}
         </CardContent>
       </Card>
+
+      <AdminRSSFeeds />
+      <AdminRedditFeeds />
+      <AdminYouTubeFeeds />
     </div>
   );
 };
