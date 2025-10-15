@@ -10,6 +10,8 @@ import Vijesti from "./pages/Vijesti";
 import Kalendar from "./pages/Kalendar";
 import Boards from "./pages/Boards";
 import Bookmarks from "./pages/Bookmarks";
+import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 
@@ -30,6 +32,8 @@ const App = () => (
           <Route path="/kalendar" element={<Kalendar />} />
           <Route path="/boards" element={<Boards />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
