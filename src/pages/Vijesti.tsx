@@ -25,9 +25,9 @@ const Vijesti = () => {
   const [redditPosts, setRedditPosts] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [worldLimit, setWorldLimit] = useState(10);
-  const [regionalLimit, setRegionalLimit] = useState(10);
-  const [redditLimit, setRedditLimit] = useState(8);
+  const [worldLimit, setWorldLimit] = useState(5);
+  const [regionalLimit, setRegionalLimit] = useState(5);
+  const [redditLimit, setRedditLimit] = useState(5);
   const [pageTitle, setPageTitle] = useState("Vijesti");
 
   useEffect(() => {
@@ -236,7 +236,7 @@ const Vijesti = () => {
                   {worldNews.length > worldLimit && (
                     <Button onClick={() => setWorldLimit(worldLimit + 10)} variant="outline" className="w-full gap-2">
                       <ChevronDown className="w-4 h-4" />
-                      Učitaj Još
+                      Učitaj Još ({worldNews.length - worldLimit} preostalo)
                     </Button>
                   )}
                 </div>
@@ -283,7 +283,7 @@ const Vijesti = () => {
                   {regionalNews.length > regionalLimit && (
                     <Button onClick={() => setRegionalLimit(regionalLimit + 10)} variant="outline" className="w-full gap-2">
                       <ChevronDown className="w-4 h-4" />
-                      Učitaj Još
+                      Učitaj Još ({regionalNews.length - regionalLimit} preostalo)
                     </Button>
                   )}
                 </div>
@@ -321,9 +321,9 @@ const Vijesti = () => {
                     </a>
                   ))}
                   {redditPosts.length > redditLimit && (
-                    <Button onClick={() => setRedditLimit(redditLimit + 8)} variant="outline" className="w-full gap-2">
+                    <Button onClick={() => setRedditLimit(redditLimit + 10)} variant="outline" className="w-full gap-2">
                       <ChevronDown className="w-4 h-4" />
-                      Učitaj Još
+                      Učitaj Još (+{redditPosts.length - redditLimit})
                     </Button>
                   )}
                 </div>

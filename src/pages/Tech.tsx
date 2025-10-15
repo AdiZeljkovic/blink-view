@@ -24,9 +24,9 @@ const Tech = () => {
   const [youtubeVideos, setYoutubeVideos] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [newsLimit, setNewsLimit] = useState(10);
-  const [videosLimit, setVideosLimit] = useState(8);
-  const [redditLimit, setRedditLimit] = useState(8);
+  const [newsLimit, setNewsLimit] = useState(5);
+  const [videosLimit, setVideosLimit] = useState(5);
+  const [redditLimit, setRedditLimit] = useState(5);
   const [pageTitle, setPageTitle] = useState("Tech Hub");
 
   useEffect(() => {
@@ -288,7 +288,7 @@ const Tech = () => {
                   ))}
                 </div>
                 {youtubeVideos.length > videosLimit && (
-                  <Button onClick={() => setVideosLimit(videosLimit + 8)} variant="outline" className="w-full gap-2 mt-4">
+                  <Button onClick={() => setVideosLimit(videosLimit + 10)} variant="outline" className="w-full gap-2 mt-4">
                     <ChevronDown className="w-4 h-4" />
                     Učitaj Još Videa ({youtubeVideos.length - videosLimit} preostalo)
                   </Button>
@@ -332,7 +332,7 @@ const Tech = () => {
                     </a>
                   ))}
                   {redditPosts.length > redditLimit && (
-                    <Button onClick={() => setRedditLimit(redditLimit + 8)} variant="outline" className="w-full gap-2 mt-4">
+                    <Button onClick={() => setRedditLimit(redditLimit + 10)} variant="outline" className="w-full gap-2 mt-4">
                       <ChevronDown className="w-4 h-4" />
                       Učitaj Još (+{redditPosts.length - redditLimit})
                     </Button>
