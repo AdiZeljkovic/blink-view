@@ -24,9 +24,9 @@ const Gaming = () => {
   const [youtubeVideos, setYoutubeVideos] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [newsLimit, setNewsLimit] = useState(5);
-  const [videosLimit, setVideosLimit] = useState(4);
-  const [redditLimit, setRedditLimit] = useState(5);
+  const [newsLimit, setNewsLimit] = useState(3);
+  const [videosLimit, setVideosLimit] = useState(3);
+  const [redditLimit, setRedditLimit] = useState(3);
   const [pageTitle, setPageTitle] = useState("Gaming Hub");
 
   useEffect(() => {
@@ -253,7 +253,7 @@ const Gaming = () => {
                   
                   {gamingNews.length > newsLimit && (
                     <Button 
-                      onClick={() => setNewsLimit(newsLimit + 10)}
+                      onClick={() => setNewsLimit(newsLimit + 5)}
                       variant="outline"
                       className="w-full gap-2 mt-4"
                     >
@@ -313,7 +313,7 @@ const Gaming = () => {
                 
                 {youtubeVideos.length > videosLimit && (
                   <Button 
-                    onClick={() => setVideosLimit(videosLimit + 8)}
+                    onClick={() => setVideosLimit(videosLimit + 5)}
                     variant="outline"
                     className="w-full gap-2 mt-4"
                   >
@@ -363,7 +363,7 @@ const Gaming = () => {
                   
                   {redditPosts.length > redditLimit && (
                     <Button 
-                      onClick={() => setRedditLimit(redditLimit + 8)}
+                      onClick={() => setRedditLimit(redditLimit + 5)}
                       variant="outline"
                       className="w-full gap-2 mt-4"
                     >
