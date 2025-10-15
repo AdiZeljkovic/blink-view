@@ -167,38 +167,64 @@ const AdminHomeWidgets = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {homelabApps.map((app, index) => (
-            <div key={index} className="flex gap-2 items-end">
-              <div className="flex-1">
-                <Label>Naziv</Label>
-                <Input
-                  value={app.name}
-                  onChange={(e) => updateHomelabApp(index, "name", e.target.value)}
-                  placeholder="Proxmox"
-                />
+            <div key={index} className="border rounded-lg p-4 space-y-3 bg-card/50">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Naziv</Label>
+                  <Input
+                    value={app.name}
+                    onChange={(e) => updateHomelabApp(index, "name", e.target.value)}
+                    placeholder="Proxmox"
+                  />
+                </div>
+                <div>
+                  <Label>URL</Label>
+                  <Input
+                    value={app.url}
+                    onChange={(e) => updateHomelabApp(index, "url", e.target.value)}
+                    placeholder="https://proxmox.local"
+                  />
+                </div>
+                <div>
+                  <Label>Ikona</Label>
+                  <select
+                    value={app.icon}
+                    onChange={(e) => updateHomelabApp(index, "icon", e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="Server">Server</option>
+                    <option value="Database">Database</option>
+                    <option value="Network">Network</option>
+                    <option value="HardDrive">Hard Drive</option>
+                    <option value="Cloud">Cloud</option>
+                    <option value="Globe">Globe</option>
+                    <option value="Shield">Shield</option>
+                    <option value="Container">Container</option>
+                    <option value="Monitor">Monitor</option>
+                    <option value="Cpu">CPU</option>
+                    <option value="Activity">Activity</option>
+                    <option value="Zap">Zap</option>
+                    <option value="Lock">Lock</option>
+                    <option value="Key">Key</option>
+                    <option value="Wifi">Wifi</option>
+                    <option value="Radio">Radio</option>
+                    <option value="Box">Box</option>
+                    <option value="Package">Package</option>
+                    <option value="Folder">Folder</option>
+                    <option value="FileText">File Text</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex-1">
-                <Label>URL</Label>
-                <Input
-                  value={app.url}
-                  onChange={(e) => updateHomelabApp(index, "url", e.target.value)}
-                  placeholder="https://proxmox.local"
-                />
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => deleteHomelabApp(index)}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Obriši
+                </Button>
               </div>
-              <div className="flex-1">
-                <Label>Ikona</Label>
-                <Input
-                  value={app.icon}
-                  onChange={(e) => updateHomelabApp(index, "icon", e.target.value)}
-                  placeholder="Server"
-                />
-              </div>
-              <Button
-                onClick={() => deleteHomelabApp(index)}
-                variant="destructive"
-                size="icon"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
             </div>
           ))}
         </CardContent>
