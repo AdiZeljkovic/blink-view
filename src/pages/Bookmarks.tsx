@@ -388,103 +388,119 @@ const Bookmarks = () => {
         </div>
 
         {/* Bookmarks Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBookmarks.map((bookmark, index) => (
             <div
               key={bookmark.id}
-              className="widget-card group animate-scale-in"
+              className="relative group animate-scale-in"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className="space-y-3">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {bookmark.favicon && (
-                      <img src={bookmark.favicon} alt="" className="w-4 h-4 flex-shrink-0" />
-                    )}
-                    <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
-                      {bookmark.title}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => toggleFavorite(bookmark.id)}
-                    >
-                      <Star
-                        className={cn(
-                          "w-3 h-3 transition-all",
-                          bookmark.isFavorite ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-                        )}
-                      />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => toggleReadLater(bookmark.id)}
-                    >
-                      <Clock
-                        className={cn(
-                          "w-3 h-3 transition-all",
-                          bookmark.isReadLater ? "fill-primary text-primary" : "text-muted-foreground"
-                        )}
-                      />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => deleteBookmark(bookmark.id)}
-                    >
-                      <Trash2 className="w-3 h-3 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* URL */}
-                <a
-                  href={bookmark.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-xs text-primary hover:underline"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  <span className="truncate">{bookmark.url}</span>
-                </a>
-
-                {/* Description */}
-                {bookmark.description && (
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {bookmark.description}
-                  </p>
-                )}
-
-                {/* Tags & Category */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <div
-                    className="px-2 py-1 rounded-md text-xs font-medium text-white"
-                    style={{ backgroundColor: getCategoryColor(bookmark.category) }}
-                  >
-                    {getCategoryName(bookmark.category)}
-                  </div>
-                  {bookmark.tags.map((tag, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary text-secondary-foreground text-xs"
-                    >
-                      <TagIcon className="w-3 h-3" />
-                      {tag}
+              <div className="relative overflow-hidden rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:bg-card transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-primary/50">
+                {/* Accent bar */}
+                <div 
+                  className="absolute top-0 left-0 right-0 h-1"
+                  style={{ backgroundColor: getCategoryColor(bookmark.category) }}
+                />
+                
+                <div className="p-6 space-y-4">
+                  {/* Header with favicon and actions */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {bookmark.favicon && (
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <img src={bookmark.favicon} alt="" className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                          {bookmark.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {new Date(bookmark.createdAt).toLocaleDateString("sr-RS")}
+                        </p>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-yellow-500/10"
+                        onClick={() => toggleFavorite(bookmark.id)}
+                      >
+                        <Star
+                          className={cn(
+                            "w-4 h-4 transition-all",
+                            bookmark.isFavorite ? "fill-yellow-400 text-yellow-400 scale-110" : "text-muted-foreground hover:text-yellow-400"
+                          )}
+                        />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-primary/10"
+                        onClick={() => toggleReadLater(bookmark.id)}
+                      >
+                        <Clock
+                          className={cn(
+                            "w-4 h-4 transition-all",
+                            bookmark.isReadLater ? "fill-primary text-primary scale-110" : "text-muted-foreground hover:text-primary"
+                          )}
+                        />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive/10"
+                        onClick={() => deleteBookmark(bookmark.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
 
-                {/* Date */}
-                <p className="text-xs text-muted-foreground">
-                  {new Date(bookmark.createdAt).toLocaleDateString("sr-RS")}
-                </p>
+                  {/* Description */}
+                  {bookmark.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                      {bookmark.description}
+                    </p>
+                  )}
+
+                  {/* Tags */}
+                  {bookmark.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {bookmark.tags.map((tag, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/50 text-secondary-foreground text-xs font-medium hover:bg-secondary transition-colors"
+                        >
+                          <TagIcon className="w-3 h-3" />
+                          {tag}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Footer with category and URL */}
+                  <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                    <div
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold text-white shadow-sm"
+                      style={{ backgroundColor: getCategoryColor(bookmark.category) }}
+                    >
+                      {getCategoryName(bookmark.category)}
+                    </div>
+                    
+                    <a
+                      href={bookmark.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors group/link"
+                    >
+                      <span>Otvori</span>
+                      <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
