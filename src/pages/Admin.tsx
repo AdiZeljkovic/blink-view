@@ -8,6 +8,10 @@ import { Shield, LogOut, Home, Bookmark, Calendar, CheckSquare, Server, CloudSun
 import AdminHomeWidgets from "@/components/admin/AdminHomeWidgets";
 import AdminBookmarks from "@/components/admin/AdminBookmarks";
 import AdminBoards from "@/components/admin/AdminBoards";
+import AdminGaming from "@/components/admin/AdminGaming";
+import AdminTech from "@/components/admin/AdminTech";
+import AdminVijesti from "@/components/admin/AdminVijesti";
+import AdminKalendar from "@/components/admin/AdminKalendar";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -54,10 +58,26 @@ const Admin = () => {
         </Card>
 
         <Tabs defaultValue="home" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-7 h-auto flex-wrap">
             <TabsTrigger value="home" className="gap-2">
               <Home className="w-4 h-4" />
-              Početna Stranica
+              Početna
+            </TabsTrigger>
+            <TabsTrigger value="gaming" className="gap-2">
+              <Server className="w-4 h-4" />
+              Gaming
+            </TabsTrigger>
+            <TabsTrigger value="tech" className="gap-2">
+              <Server className="w-4 h-4" />
+              Tech
+            </TabsTrigger>
+            <TabsTrigger value="vijesti" className="gap-2">
+              <Server className="w-4 h-4" />
+              Vijesti
+            </TabsTrigger>
+            <TabsTrigger value="kalendar" className="gap-2">
+              <Calendar className="w-4 h-4" />
+              Kalendar
             </TabsTrigger>
             <TabsTrigger value="bookmarks" className="gap-2">
               <Bookmark className="w-4 h-4" />
@@ -71,6 +91,22 @@ const Admin = () => {
 
           <TabsContent value="home">
             <AdminHomeWidgets />
+          </TabsContent>
+
+          <TabsContent value="gaming">
+            <AdminGaming />
+          </TabsContent>
+
+          <TabsContent value="tech">
+            <AdminTech />
+          </TabsContent>
+
+          <TabsContent value="vijesti">
+            <AdminVijesti />
+          </TabsContent>
+
+          <TabsContent value="kalendar">
+            <AdminKalendar />
           </TabsContent>
 
           <TabsContent value="bookmarks">
