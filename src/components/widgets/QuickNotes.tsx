@@ -24,7 +24,7 @@ const QuickNotes = () => {
     <div className="widget-card space-y-5">
       <div className="flex items-center gap-3">
         <FileText className="h-5 w-5 text-primary" />
-        <h2 className="font-mono-heading text-xl">Brze Bilješke</h2>
+        <h2 className="font-mono-heading text-xl">Dodaj Novu Bilješku</h2>
       </div>
       
       <div className="space-y-3">
@@ -32,7 +32,7 @@ const QuickNotes = () => {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Zapiši bilo šta..."
-          className="min-h-[100px] resize-none border-border bg-background text-sm focus-visible:ring-primary"
+          className="min-h-[150px] resize-none border-border bg-background text-sm focus-visible:ring-primary"
         />
         <Button 
           onClick={handleSave}

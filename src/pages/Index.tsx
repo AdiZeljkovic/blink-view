@@ -1,72 +1,51 @@
-import { useState } from "react";
-import TabNavigation from "@/components/TabNavigation";
+import Header from "@/components/Header";
 import Clock from "@/components/Clock";
 import SearchBar from "@/components/SearchBar";
 import TaskList from "@/components/widgets/TaskList";
 import Calendar from "@/components/widgets/Calendar";
 import Weather from "@/components/widgets/Weather";
 import QuickNotes from "@/components/widgets/QuickNotes";
-import ServerMonitoring from "@/components/widgets/ServerMonitoring";
 import HomelabApps from "@/components/widgets/HomelabApps";
+import Bookmarks from "@/components/widgets/Bookmarks";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("fokus");
-
   return (
     <div className="min-h-screen flex flex-col">
-      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header />
       
-      {activeTab === "fokus" && (
-        <main className="flex-1 container mx-auto px-6 py-8 max-w-[1400px]">
-          <div className="space-y-12">
-            {/* Header with Clock */}
-            <section className="py-8">
-              <Clock />
-            </section>
+      <main className="flex-1 container mx-auto px-6 py-8 max-w-[1600px]">
+        <div className="space-y-8">
+          {/* Central Block - Clock and Search */}
+          <section className="py-6">
+            <Clock />
+          </section>
 
-            {/* Search Bar */}
-            <section>
-              <SearchBar />
-            </section>
+          <section className="max-w-3xl mx-auto">
+            <SearchBar />
+          </section>
 
-            {/* Widgets Grid - Compact 2-column layout */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-              {/* Left Column */}
-              <div className="space-y-6">
-                <TaskList />
-                <Calendar />
-              </div>
+          {/* Main Grid - 3 Column Layout */}
+          <section className="grid grid-cols-1 lg:grid-cols-4 gap-6 pt-4">
+            {/* Left Column */}
+            <div className="lg:col-span-1 space-y-6">
+              <Weather />
+              <Bookmarks />
+            </div>
 
-              {/* Right Column */}
-              <div className="space-y-6">
-                <Weather />
-                <ServerMonitoring />
-                <QuickNotes />
-              </div>
-            </section>
-
-            {/* Homelab Apps - Full Width */}
-            <section className="pt-6">
+            {/* Center Column */}
+            <div className="lg:col-span-2 space-y-6">
               <HomelabApps />
-            </section>
-          </div>
-        </main>
-      )}
+              <QuickNotes />
+            </div>
 
-      {activeTab !== "fokus" && (
-        <main className="flex-1 container mx-auto px-6 py-16">
-          <div className="max-w-7xl mx-auto text-center">
-            <h2 className="font-mono-heading text-3xl mb-4">
-              {activeTab === "homelab" && "HOMELAB"}
-              {activeTab === "sadrzaj" && "SADRŽAJ"}
-              {activeTab === "projekti" && "PROJEKTI"}
-            </h2>
-            <p className="text-muted-foreground">
-              Ova sekcija je u pripremi
-            </p>
-          </div>
-        </main>
-      )}
+            {/* Right Column */}
+            <div className="lg:col-span-1 space-y-6">
+              <TaskList />
+              <Calendar />
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 };

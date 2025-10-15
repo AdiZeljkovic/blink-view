@@ -16,7 +16,7 @@ const HomelabApps = () => {
     <div className="widget-card">
       <div className="flex items-center gap-2 mb-6">
         <Server className="w-5 h-5 text-primary" />
-        <h2 className="text-xl font-mono-heading">Homelab Apps</h2>
+        <h2 className="text-xl font-mono-heading">Ikonice Aplikacija sa Servera</h2>
       </div>
       
       <div className="grid grid-cols-4 gap-4">
