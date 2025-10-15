@@ -15,8 +15,9 @@ const AdminLogin = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // WARNING: This is NOT secure! Credentials are visible in the code.
-    if (email === "adi.zeljkovic@outlook.com" && password === "BubaZeljković2112!") {
+    const storedPassword = localStorage.getItem("admin_password") || "BubaZeljković2112!";
+    
+    if (email === "adi.zeljkovic@outlook.com" && password === storedPassword) {
       localStorage.setItem("admin_logged_in", "true");
       toast.success("Uspješno prijavljeni!");
       navigate("/admin");

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Shield, LogOut, Home, Bookmark, Calendar, CheckSquare, Server, CloudSun } from "lucide-react";
+import { Shield, LogOut, Home, Bookmark, Calendar, CheckSquare, Server, Settings } from "lucide-react";
 import AdminHomeWidgets from "@/components/admin/AdminHomeWidgets";
 import AdminBookmarks from "@/components/admin/AdminBookmarks";
 import AdminBoards from "@/components/admin/AdminBoards";
@@ -12,6 +12,7 @@ import AdminGaming from "@/components/admin/AdminGaming";
 import AdminTech from "@/components/admin/AdminTech";
 import AdminVijesti from "@/components/admin/AdminVijesti";
 import AdminKalendar from "@/components/admin/AdminKalendar";
+import AdminSettings from "@/components/admin/AdminSettings";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ const Admin = () => {
         </Card>
 
         <Tabs defaultValue="home" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 h-auto flex-wrap">
+          <TabsList className="grid w-full grid-cols-8 h-auto flex-wrap">
             <TabsTrigger value="home" className="gap-2">
               <Home className="w-4 h-4" />
               Početna
@@ -86,6 +87,10 @@ const Admin = () => {
             <TabsTrigger value="boards" className="gap-2">
               <CheckSquare className="w-4 h-4" />
               Boards
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="w-4 h-4" />
+              Postavke
             </TabsTrigger>
           </TabsList>
 
@@ -115,6 +120,10 @@ const Admin = () => {
 
           <TabsContent value="boards">
             <AdminBoards />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <AdminSettings />
           </TabsContent>
         </Tabs>
       </div>
