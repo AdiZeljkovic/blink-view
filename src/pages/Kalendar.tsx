@@ -157,13 +157,32 @@ const Kalendar = () => {
                   </Popover>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time">Vrijeme (24h format)</Label>
+                  <Label htmlFor="time">Vrijeme (HH:MM - 24h format)</Label>
                   <Input
                     id="time"
-                    type="time"
+                    type="text"
+                    placeholder="15:34"
+                    pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
                     value={newEvent.time}
-                    onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow typing numbers and colon
+                      if (value === '' || /^[0-9:]*$/.test(value)) {
+                        setNewEvent({ ...newEvent, time: value });
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Format time on blur
+                      const value = e.target.value;
+                      const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+                      if (!timeRegex.test(value) && value !== '') {
+                        toast.error("Unesite vrijeme u formatu HH:MM (npr. 15:34)");
+                        setNewEvent({ ...newEvent, time: "12:00" });
+                      }
+                    }}
+                    className="font-mono"
                   />
+                  <p className="text-xs text-muted-foreground">Primjer: 09:30, 15:45, 23:00</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Opis (opcionalno)</Label>
