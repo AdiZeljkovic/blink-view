@@ -1,27 +1,36 @@
 import { Bookmark, ExternalLink, Star } from "lucide-react";
 import { useState, useEffect } from "react";
+import { storage } from "@/lib/storage";
+import { toast } from "sonner";
 
 const Bookmarks = () => {
-  const [bookmarks, setBookmarks] = useState([
+  const defaultBookmarks = [
     { name: "GitHub", url: "https://github.com", color: "from-purple-500/20 to-purple-600/20", icon: "💻" },
     { name: "YouTube", url: "https://youtube.com", color: "from-red-500/20 to-red-600/20", icon: "📺" },
     { name: "Reddit", url: "https://reddit.com", color: "from-orange-500/20 to-orange-600/20", icon: "🔥" },
     { name: "Twitter", url: "https://twitter.com", color: "from-blue-500/20 to-blue-600/20", icon: "🐦" },
     { name: "Dev.to", url: "https://dev.to", color: "from-green-500/20 to-green-600/20", icon: "👨‍💻" },
-  ]);
+  ];
+
+  const [bookmarks, setBookmarks] = useState(defaultBookmarks);
 
   useEffect(() => {
-    const saved = localStorage.getItem("widget-bookmarks");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.length > 0) {
-        setBookmarks(parsed.map((b: any, i: number) => ({
-          ...b,
-          color: bookmarks[i % bookmarks.length].color,
-          icon: bookmarks[i % bookmarks.length].icon
-        })));
+    const loadBookmarks = async () => {
+      try {
+        const saved = await storage.getJSON<any[]>("widget-bookmarks");
+        if (saved && saved.length > 0) {
+          setBookmarks(saved.map((b: any, i: number) => ({
+            ...b,
+            color: defaultBookmarks[i % defaultBookmarks.length].color,
+            icon: defaultBookmarks[i % defaultBookmarks.length].icon
+          })));
+        }
+      } catch (error) {
+        console.error("Error loading bookmarks:", error);
+        toast.error("Greška pri učitavanju bookmarks");
       }
-    }
+    };
+    loadBookmarks();
   }, []);
 
   return (

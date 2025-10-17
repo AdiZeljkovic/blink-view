@@ -1,23 +1,175 @@
-import { Cloud, Sun, CloudRain, CloudSnow, Wind, Droplets, Eye, Gauge } from "lucide-react";
+import { Cloud, Sun, CloudRain, CloudSnow, Wind, Droplets, Eye, Gauge, AlertCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+interface WeatherData {
+  city: string;
+  temperature: number;
+  condition: "sunny" | "cloudy" | "rainy" | "snowy";
+  humidity: number;
+  windSpeed: number;
+  visibility: number;
+  pressure: number;
+  feelsLike: number;
+}
+
+interface ForecastDay {
+  day: string;
+  temp: number;
+  condition: string;
+  icon: any;
+}
 
 const Weather = () => {
-  // In a real app, this would fetch from a weather API
-  const currentWeather = {
-    city: "Sarajevo",
-    temperature: 18,
-    condition: "sunny" as const,
-    humidity: 65,
-    windSpeed: 12,
-    visibility: 10,
-    pressure: 1013,
-    feelsLike: 16
+  const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
+  const [forecast, setForecast] = useState<ForecastDay[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchWeather();
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000); // Refresh every 30 minutes
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchWeather = async () => {
+    const apiKey = localStorage.getItem("weather-api-key");
+    const city = localStorage.getItem("weather-city") || "Sarajevo";
+
+    if (!apiKey) {
+      setError("API ključ nije postavljen. Idite u Admin → Početna Stranica da ga postavite.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Try OpenWeatherMap format first
+      const currentResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric&lang=hr`
+      );
+
+      if (!currentResponse.ok) {
+        throw new Error("Neuspješno učitavanje vremenske prognoze. Provjerite API ključ.");
+      }
+
+      const currentData = await currentResponse.json();
+
+      // Fetch 5-day forecast
+      const forecastResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric&lang=hr`
+      );
+
+      const forecastData = await forecastResponse.json();
+
+      // Map weather conditions
+      const mapCondition = (main: string): "sunny" | "cloudy" | "rainy" | "snowy" => {
+        const conditions: { [key: string]: "sunny" | "cloudy" | "rainy" | "snowy" } = {
+          Clear: "sunny",
+          Clouds: "cloudy",
+          Rain: "rainy",
+          Drizzle: "rainy",
+          Snow: "snowy",
+          Thunderstorm: "rainy",
+        };
+        return conditions[main] || "cloudy";
+      };
+
+      const mapIcon = (condition: string) => {
+        const icons: { [key: string]: any } = {
+          sunny: Sun,
+          cloudy: Cloud,
+          rainy: CloudRain,
+          snowy: CloudSnow,
+        };
+        return icons[condition] || Cloud;
+      };
+
+      setCurrentWeather({
+        city: currentData.name,
+        temperature: Math.round(currentData.main.temp),
+        condition: mapCondition(currentData.weather[0].main),
+        humidity: currentData.main.humidity,
+        windSpeed: Math.round(currentData.wind.speed * 3.6), // m/s to km/h
+        visibility: Math.round(currentData.visibility / 1000),
+        pressure: currentData.main.pressure,
+        feelsLike: Math.round(currentData.main.feels_like),
+      });
+
+      // Process forecast - get one per day
+      const dailyForecasts: ForecastDay[] = [];
+      const processedDays = new Set<string>();
+
+      forecastData.list.forEach((item: any) => {
+        const date = new Date(item.dt * 1000);
+        const dayKey = date.toDateString();
+
+        if (!processedDays.has(dayKey) && dailyForecasts.length < 3) {
+          processedDays.add(dayKey);
+          const dayNames = ["Nedjelja", "Ponedjeljak", "Utorak", "Srijeda", "Četvrtak", "Petak", "Subota"];
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          let dayLabel = "";
+          if (date.toDateString() === tomorrow.toDateString()) {
+            dayLabel = "Sutra";
+          } else {
+            const dayAfterTomorrow = new Date();
+            dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+            if (date.toDateString() === dayAfterTomorrow.toDateString()) {
+              dayLabel = "Prekosutra";
+            } else {
+              dayLabel = dayNames[date.getDay()];
+            }
+          }
+
+          const condition = mapCondition(item.weather[0].main);
+          dailyForecasts.push({
+            day: dayLabel,
+            temp: Math.round(item.main.temp),
+            condition,
+            icon: mapIcon(condition),
+          });
+        }
+      });
+
+      setForecast(dailyForecasts);
+      setError(null);
+    } catch (err: any) {
+      console.error("Weather fetch error:", err);
+      setError(err.message || "Greška pri učitavanju vremena");
+      toast.error("Greška pri učitavanju vremenske prognoze");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const forecast = [
-    { day: "Sutra", temp: 20, condition: "cloudy", icon: Cloud },
-    { day: "Prekosutra", temp: 17, condition: "rainy", icon: CloudRain },
-    { day: "3 Dana", temp: 15, condition: "cloudy", icon: Cloud }
-  ];
+  if (loading) {
+    return (
+      <div className="widget-card">
+        <div className="flex items-center gap-2 mb-6">
+          <Cloud className="w-5 h-5 text-primary animate-pulse" />
+          <h2 className="text-xl font-mono-heading">Vremenska Prognoza</h2>
+        </div>
+        <div className="text-center py-6">
+          <p className="text-sm text-muted-foreground">Učitavam...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !currentWeather) {
+    return (
+      <div className="widget-card">
+        <div className="flex items-center gap-2 mb-6">
+          <AlertCircle className="w-5 h-5 text-destructive" />
+          <h2 className="text-xl font-mono-heading">Vremenska Prognoza</h2>
+        </div>
+        <div className="text-center py-6">
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   const WeatherIcon = {
     sunny: Sun,

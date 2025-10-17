@@ -1,6 +1,8 @@
 import { Server, Database, Network, HardDrive, Cloud, Globe, Shield, Container } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
+import { storage } from "@/lib/storage";
+import { toast } from "sonner";
 
 interface HomelabApp {
   name: string;
@@ -9,7 +11,7 @@ interface HomelabApp {
 }
 
 const HomelabApps = () => {
-  const [apps, setApps] = useState<HomelabApp[]>([
+  const defaultApps: HomelabApp[] = [
     { name: "Proxmox", icon: "Server", url: "#" },
     { name: "TrueNAS", icon: "Database", url: "#" },
     { name: "Pi-hole", icon: "Shield", url: "#" },
@@ -18,16 +20,23 @@ const HomelabApps = () => {
     { name: "pfSense", icon: "Network", url: "#" },
     { name: "Jellyfin", icon: "HardDrive", url: "#" },
     { name: "Nginx", icon: "Globe", url: "#" },
-  ]);
+  ];
+
+  const [apps, setApps] = useState<HomelabApp[]>(defaultApps);
 
   useEffect(() => {
-    const saved = localStorage.getItem("homelab-apps");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.length > 0) {
-        setApps(parsed);
+    const loadApps = async () => {
+      try {
+        const saved = await storage.getJSON<HomelabApp[]>("homelab-apps");
+        if (saved && saved.length > 0) {
+          setApps(saved);
+        }
+      } catch (error) {
+        console.error("Error loading homelab apps:", error);
+        toast.error("Greška pri učitavanju aplikacija");
       }
-    }
+    };
+    loadApps();
   }, []);
 
   const getIcon = (iconName: string) => {

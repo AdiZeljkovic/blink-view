@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Trash2, Plus, Key } from "lucide-react";
+import { storage } from "@/lib/storage";
 
 const AdminHomeWidgets = () => {
   const [bookmarks, setBookmarks] = useState<any[]>([]);
@@ -14,63 +15,97 @@ const AdminHomeWidgets = () => {
   const [weatherApiKey, setWeatherApiKey] = useState("");
 
   useEffect(() => {
-    const savedBookmarks = localStorage.getItem("widget-bookmarks");
-    const savedApps = localStorage.getItem("homelab-apps");
-    const savedCity = localStorage.getItem("weather-city");
-    const savedApiKey = localStorage.getItem("weather-api-key");
-    
-    if (savedBookmarks) setBookmarks(JSON.parse(savedBookmarks));
-    if (savedApps) setHomelabApps(JSON.parse(savedApps));
-    if (savedCity) setWeatherCity(savedCity);
-    if (savedApiKey) setWeatherApiKey(savedApiKey);
+    const loadSettings = async () => {
+      try {
+        const savedBookmarks = await storage.getJSON<any[]>("widget-bookmarks");
+        const savedApps = await storage.getJSON<any[]>("homelab-apps");
+        const savedCity = localStorage.getItem("weather-city");
+        const savedApiKey = localStorage.getItem("weather-api-key");
+        
+        if (savedBookmarks) setBookmarks(savedBookmarks);
+        if (savedApps) setHomelabApps(savedApps);
+        if (savedCity) setWeatherCity(savedCity);
+        if (savedApiKey) setWeatherApiKey(savedApiKey);
+      } catch (error) {
+        console.error("Error loading widget settings:", error);
+      }
+    };
+    loadSettings();
   }, []);
 
-  const addBookmark = () => {
+  const addBookmark = async () => {
     const newBookmark = { name: "", url: "" };
     const updated = [...bookmarks, newBookmark];
     setBookmarks(updated);
-    localStorage.setItem("widget-bookmarks", JSON.stringify(updated));
+    try {
+      await storage.setJSON("widget-bookmarks", updated);
+    } catch (error) {
+      toast.error("Greška pri čuvanju bookmark-a");
+    }
   };
 
-  const updateBookmark = (index: number, field: string, value: string) => {
+  const updateBookmark = async (index: number, field: string, value: string) => {
     const updated = [...bookmarks];
     updated[index][field] = value;
     setBookmarks(updated);
-    localStorage.setItem("widget-bookmarks", JSON.stringify(updated));
+    try {
+      await storage.setJSON("widget-bookmarks", updated);
+    } catch (error) {
+      toast.error("Greška pri ažuriranju bookmark-a");
+    }
   };
 
-  const deleteBookmark = (index: number) => {
+  const deleteBookmark = async (index: number) => {
     const updated = bookmarks.filter((_, i) => i !== index);
     setBookmarks(updated);
-    localStorage.setItem("widget-bookmarks", JSON.stringify(updated));
-    toast.success("Bookmark obrisan");
+    try {
+      await storage.setJSON("widget-bookmarks", updated);
+      toast.success("Bookmark obrisan");
+    } catch (error) {
+      toast.error("Greška pri brisanju bookmark-a");
+    }
   };
 
-  const addHomelabApp = () => {
+  const addHomelabApp = async () => {
     const newApp = { name: "", url: "", icon: "Server" };
     const updated = [...homelabApps, newApp];
     setHomelabApps(updated);
-    localStorage.setItem("homelab-apps", JSON.stringify(updated));
+    try {
+      await storage.setJSON("homelab-apps", updated);
+    } catch (error) {
+      toast.error("Greška pri dodavanju aplikacije");
+    }
   };
 
-  const updateHomelabApp = (index: number, field: string, value: string) => {
+  const updateHomelabApp = async (index: number, field: string, value: string) => {
     const updated = [...homelabApps];
     updated[index][field] = value;
     setHomelabApps(updated);
-    localStorage.setItem("homelab-apps", JSON.stringify(updated));
+    try {
+      await storage.setJSON("homelab-apps", updated);
+    } catch (error) {
+      toast.error("Greška pri ažuriranju aplikacije");
+    }
   };
 
-  const deleteHomelabApp = (index: number) => {
+  const deleteHomelabApp = async (index: number) => {
     const updated = homelabApps.filter((_, i) => i !== index);
     setHomelabApps(updated);
-    localStorage.setItem("homelab-apps", JSON.stringify(updated));
-    toast.success("Aplikacija obrisana");
+    try {
+      await storage.setJSON("homelab-apps", updated);
+      toast.success("Aplikacija obrisana");
+    } catch (error) {
+      toast.error("Greška pri brisanju aplikacije");
+    }
   };
 
   const saveWeatherSettings = () => {
     localStorage.setItem("weather-city", weatherCity);
     localStorage.setItem("weather-api-key", weatherApiKey);
     toast.success("Postavke vremenskog widgeta sačuvane");
+    
+    // Trigger weather widget refresh
+    window.dispatchEvent(new Event('weather-settings-updated'));
   };
 
   return (

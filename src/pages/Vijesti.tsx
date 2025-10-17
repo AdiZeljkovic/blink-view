@@ -31,10 +31,14 @@ const Vijesti = () => {
   const [pageTitle, setPageTitle] = useState("Vijesti");
 
   useEffect(() => {
-    const savedTitle = localStorage.getItem("vijesti-widget-title");
-    if (savedTitle) setPageTitle(savedTitle);
+    const loadSettings = async () => {
+      const savedTitle = localStorage.getItem("vijesti-widget-title");
+      if (savedTitle) setPageTitle(savedTitle);
+      
+      await fetchNewsFeeds();
+    };
     
-    fetchNewsFeeds();
+    loadSettings();
     const interval = setInterval(() => fetchNewsFeeds(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -57,19 +61,46 @@ const Vijesti = () => {
       const regionalFeeds = feeds.filter(f => f.type === "regional");
       const redditFeeds = feeds.filter(f => f.type === "reddit");
 
-      const worldPromises = worldFeeds.map(feed =>
-        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`)
-          .then(r => r.json())
-          .then(data => ({ ...data, feedName: feed.name }))
-          .catch(() => ({ items: [], feedName: feed.name }))
-      );
+      // Helper function to fetch RSS with multiple fallback methods
+      const fetchRSSFeed = async (feed: RSSFeed) => {
+        // Try rss2json first
+        try {
+          const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
+          const data = await response.json();
+          if (data.items && data.items.length > 0) {
+            return { ...data, feedName: feed.name };
+          }
+        } catch (error) {
+          console.log(`[RSS] rss2json failed for ${feed.name}, trying alternatives...`);
+        }
 
-      const regionalPromises = regionalFeeds.map(feed =>
-        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`)
-          .then(r => r.json())
-          .then(data => ({ ...data, feedName: feed.name }))
-          .catch(() => ({ items: [], feedName: feed.name }))
-      );
+        // Try alternative RSS parser
+        try {
+          const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`);
+          const data = await response.json();
+          if (data.contents) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(data.contents, "text/xml");
+            const items = Array.from(xml.querySelectorAll("item")).slice(0, 10).map(item => ({
+              title: item.querySelector("title")?.textContent || "",
+              link: item.querySelector("link")?.textContent || "",
+              pubDate: item.querySelector("pubDate")?.textContent || new Date().toISOString(),
+              description: item.querySelector("description")?.textContent || "",
+            }));
+            if (items.length > 0) {
+              return { items, feedName: feed.name };
+            }
+          }
+        } catch (error) {
+          console.log(`[RSS] Alternative parser failed for ${feed.name}`);
+        }
+
+        // Return empty if all methods fail
+        return { items: [], feedName: feed.name };
+      };
+
+      const worldPromises = worldFeeds.map(feed => fetchRSSFeed(feed));
+      const regionalPromises = regionalFeeds.map(feed => fetchRSSFeed(feed));
 
       const redditPromises = redditFeeds.map(feed => {
         const url = feed.url.includes('.json') ? feed.url : feed.url + '.json';

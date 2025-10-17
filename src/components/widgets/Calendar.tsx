@@ -1,6 +1,8 @@
 import { CalendarIcon, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { storage } from "@/lib/storage";
+import { toast } from "sonner";
 
 interface CalendarEvent {
   id: string;
@@ -15,10 +17,18 @@ const Calendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   useEffect(() => {
-    const savedEvents = localStorage.getItem("calendar-events");
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
-    }
+    const loadEvents = async () => {
+      try {
+        const savedEvents = await storage.getJSON<CalendarEvent[]>("calendar-events");
+        if (savedEvents) {
+          setEvents(savedEvents);
+        }
+      } catch (error) {
+        console.error("Error loading calendar events:", error);
+        toast.error("Greška pri učitavanju događaja");
+      }
+    };
+    loadEvents();
   }, []);
 
   const today = new Date();
