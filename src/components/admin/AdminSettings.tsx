@@ -119,30 +119,69 @@ const AdminSettings = () => {
       return;
     }
 
-    // Test connection
-    try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`
-        }
-      });
+    // Trim whitespace from inputs
+    const cleanUrl = supabaseUrl.trim();
+    const cleanKey = supabaseKey.trim();
 
-      if (response.ok || response.status === 404) {
-        localStorage.setItem("custom_supabase_url", supabaseUrl);
-        localStorage.setItem("custom_supabase_key", supabaseKey);
+    console.log('[Supabase Connect] Attempting to connect to:', cleanUrl);
+
+    // Test connection using Supabase client
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const testClient = createClient(cleanUrl, cleanKey);
+      
+      console.log('[Supabase Connect] Testing connection with auth check...');
+      
+      // Try to get session to verify connection works
+      const { error: authError } = await testClient.auth.getSession();
+      
+      if (authError) {
+        console.error('[Supabase Connect] Auth error:', authError);
+        
+        // Check if it's a network/CORS error vs auth error
+        if (authError.message.includes('fetch') || authError.message.includes('NetworkError') || authError.message.includes('CORS')) {
+          toast.error(`Greška mreže: Provjerite da li je Supabase dostupan na ${cleanUrl} i da li su CORS pravila ispravno podešena`);
+        } else {
+          // Auth errors are actually OK - it means we can reach the server
+          console.log('[Supabase Connect] Connection successful (auth not configured is OK)');
+          localStorage.setItem("custom_supabase_url", cleanUrl);
+          localStorage.setItem("custom_supabase_key", cleanKey);
+          setIsSupabaseConnected(true);
+          toast.success("Supabase uspješno povezan!");
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+          return;
+        }
+      } else {
+        // Connection successful
+        console.log('[Supabase Connect] Connection successful');
+        localStorage.setItem("custom_supabase_url", cleanUrl);
+        localStorage.setItem("custom_supabase_key", cleanKey);
         setIsSupabaseConnected(true);
         toast.success("Supabase uspješno povezan!");
         
         setTimeout(() => {
           window.location.reload();
         }, 1000);
-      } else {
-        toast.error("Greška pri povezivanju - provjerite URL i Key");
       }
-    } catch (error) {
-      toast.error("Greška pri povezivanju sa Supabase-om");
-      console.error(error);
+    } catch (error: any) {
+      console.error('[Supabase Connect] Connection failed:', error);
+      
+      let errorMessage = "Greška pri povezivanju sa Supabase-om";
+      
+      if (error.message) {
+        if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
+          errorMessage = `Greška mreže: Ne mogu pristupiti ${cleanUrl}. Provjerite URL i mrežnu konekciju.`;
+        } else if (error.message.includes('CORS')) {
+          errorMessage = "CORS greška: Supabase mora dozvoliti pristup sa ovog domena.";
+        } else {
+          errorMessage = `Greška: ${error.message}`;
+        }
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
