@@ -5,20 +5,28 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, Plus, Edit } from "lucide-react";
+import { storage } from "@/lib/storage";
 
 const AdminBookmarks = () => {
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("user-bookmarks");
-    const savedCategories = localStorage.getItem("bookmark-categories");
-    
-    if (saved) setBookmarks(JSON.parse(saved));
-    if (savedCategories) setCategories(JSON.parse(savedCategories));
+    const loadData = async () => {
+      try {
+        const saved = await storage.getJSON<any[]>("user-bookmarks");
+        const savedCategories = await storage.getJSON<string[]>("bookmark-categories");
+        
+        if (saved) setBookmarks(saved);
+        if (savedCategories) setCategories(savedCategories);
+      } catch (error) {
+        console.error("Error loading bookmarks:", error);
+      }
+    };
+    loadData();
   }, []);
 
-  const addBookmark = () => {
+  const addBookmark = async () => {
     const newBookmark = {
       id: Date.now().toString(),
       title: "",
@@ -31,31 +39,47 @@ const AdminBookmarks = () => {
     };
     const updated = [...bookmarks, newBookmark];
     setBookmarks(updated);
-    localStorage.setItem("user-bookmarks", JSON.stringify(updated));
+    try {
+      await storage.setJSON("user-bookmarks", updated);
+    } catch (error) {
+      toast.error("Greška pri dodavanju bookmark-a");
+    }
   };
 
-  const updateBookmark = (id: string, field: string, value: any) => {
+  const updateBookmark = async (id: string, field: string, value: any) => {
     const updated = bookmarks.map(b => 
       b.id === id ? { ...b, [field]: value } : b
     );
     setBookmarks(updated);
-    localStorage.setItem("user-bookmarks", JSON.stringify(updated));
+    try {
+      await storage.setJSON("user-bookmarks", updated);
+    } catch (error) {
+      toast.error("Greška pri ažuriranju bookmark-a");
+    }
   };
 
-  const deleteBookmark = (id: string) => {
+  const deleteBookmark = async (id: string) => {
     const updated = bookmarks.filter(b => b.id !== id);
     setBookmarks(updated);
-    localStorage.setItem("user-bookmarks", JSON.stringify(updated));
-    toast.success("Bookmark obrisan");
+    try {
+      await storage.setJSON("user-bookmarks", updated);
+      toast.success("Bookmark obrisan");
+    } catch (error) {
+      toast.error("Greška pri brisanju bookmark-a");
+    }
   };
 
-  const addCategory = () => {
+  const addCategory = async () => {
     const newCategory = prompt("Unesite naziv nove kategorije:");
     if (newCategory && !categories.includes(newCategory)) {
       const updated = [...categories, newCategory];
       setCategories(updated);
-      localStorage.setItem("bookmark-categories", JSON.stringify(updated));
-      toast.success("Kategorija dodana");
+      try {
+        await storage.setJSON("bookmark-categories", updated);
+        toast.success("Kategorija dodana");
+      } catch (error) {
+        toast.error("Greška pri dodavanju kategorije");
+      }
     }
   };
 

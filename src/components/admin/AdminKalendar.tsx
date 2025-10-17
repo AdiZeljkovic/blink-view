@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
+import { storage } from "@/lib/storage";
 
 interface Event {
   id: string;
@@ -22,17 +23,24 @@ const AdminKalendar = () => {
   const [widgetTitle, setWidgetTitle] = useState("Kalendar");
 
   useEffect(() => {
-    const savedEvents = localStorage.getItem("calendar-events");
-    const savedTitle = localStorage.getItem("kalendar-widget-title");
-    
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
-    }
-    
-    if (savedTitle) setWidgetTitle(savedTitle);
+    const loadData = async () => {
+      try {
+        const savedEvents = await storage.getJSON<Event[]>("calendar-events");
+        const savedTitle = localStorage.getItem("kalendar-widget-title");
+        
+        if (savedEvents) {
+          setEvents(savedEvents);
+        }
+        
+        if (savedTitle) setWidgetTitle(savedTitle);
+      } catch (error) {
+        console.error("Error loading calendar data:", error);
+      }
+    };
+    loadData();
   }, []);
 
-  const addEvent = () => {
+  const addEvent = async () => {
     const newEvent: Event = {
       id: Date.now().toString(),
       title: "",
@@ -43,22 +51,34 @@ const AdminKalendar = () => {
     };
     const updated = [...events, newEvent];
     setEvents(updated);
-    localStorage.setItem("calendar-events", JSON.stringify(updated));
+    try {
+      await storage.setJSON("calendar-events", updated);
+    } catch (error) {
+      toast.error("Greška pri dodavanju događaja");
+    }
   };
 
-  const updateEvent = (id: string, field: keyof Event, value: string) => {
+  const updateEvent = async (id: string, field: keyof Event, value: string) => {
     const updated = events.map(e => 
       e.id === id ? { ...e, [field]: value } : e
     );
     setEvents(updated);
-    localStorage.setItem("calendar-events", JSON.stringify(updated));
+    try {
+      await storage.setJSON("calendar-events", updated);
+    } catch (error) {
+      toast.error("Greška pri ažuriranju događaja");
+    }
   };
 
-  const deleteEvent = (id: string) => {
+  const deleteEvent = async (id: string) => {
     const updated = events.filter(e => e.id !== id);
     setEvents(updated);
-    localStorage.setItem("calendar-events", JSON.stringify(updated));
-    toast.success("Događaj obrisan");
+    try {
+      await storage.setJSON("calendar-events", updated);
+      toast.success("Događaj obrisan");
+    } catch (error) {
+      toast.error("Greška pri brisanju događaja");
+    }
   };
 
   const saveTitle = () => {

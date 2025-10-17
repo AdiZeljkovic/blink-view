@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Globe, Newspaper, MessageSquare, RefreshCw, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface FeedItem {
   title: string;
@@ -48,8 +49,8 @@ const Vijesti = () => {
     setRefreshing(!silent);
     
     try {
-      const savedFeeds = localStorage.getItem("vijesti-rss-feeds");
-      const feeds: RSSFeed[] = savedFeeds ? JSON.parse(savedFeeds) : [
+      const savedFeeds = await storage.getJSON<RSSFeed[]>("vijesti-rss-feeds");
+      const feeds: RSSFeed[] = savedFeeds || [
         { id: "1", name: "BBC News", url: "http://feeds.bbci.co.uk/news/world/rss.xml", type: "world" },
         { id: "2", name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", type: "world" },
         { id: "3", name: "Klix.ba", url: "https://www.klix.ba/rss", type: "regional" },

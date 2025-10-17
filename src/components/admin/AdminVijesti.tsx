@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
+import { storage } from "@/lib/storage";
 
 interface RSSFeed {
   id: string;
@@ -18,26 +19,35 @@ const AdminVijesti = () => {
   const [widgetTitle, setWidgetTitle] = useState("Vijesti");
 
   useEffect(() => {
-    const savedFeeds = localStorage.getItem("vijesti-rss-feeds");
-    const savedTitle = localStorage.getItem("vijesti-widget-title");
-    
-    if (savedFeeds) {
-      setRssFeeds(JSON.parse(savedFeeds));
-    } else {
-      // Default feeds
-      setRssFeeds([
-        { id: "1", name: "BBC News", url: "http://feeds.bbci.co.uk/news/world/rss.xml", type: "world" },
-        { id: "2", name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", type: "world" },
-        { id: "3", name: "Klix.ba", url: "https://www.klix.ba/rss", type: "regional" },
-        { id: "4", name: "Blic.rs", url: "https://www.blic.rs/rss", type: "regional" },
-        { id: "5", name: "r/worldnews", url: "https://www.reddit.com/r/worldnews.json", type: "reddit" },
-      ]);
-    }
-    
-    if (savedTitle) setWidgetTitle(savedTitle);
+    const loadData = async () => {
+      try {
+        const savedFeeds = await storage.getJSON<RSSFeed[]>("vijesti-rss-feeds");
+        const savedTitle = localStorage.getItem("vijesti-widget-title");
+        
+        if (savedFeeds) {
+          setRssFeeds(savedFeeds);
+        } else {
+          // Default feeds
+          const defaultFeeds: RSSFeed[] = [
+            { id: "1", name: "BBC News", url: "http://feeds.bbci.co.uk/news/world/rss.xml", type: "world" },
+            { id: "2", name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", type: "world" },
+            { id: "3", name: "Klix.ba", url: "https://www.klix.ba/rss", type: "regional" },
+            { id: "4", name: "Blic.rs", url: "https://www.blic.rs/rss", type: "regional" },
+            { id: "5", name: "r/worldnews", url: "https://www.reddit.com/r/worldnews.json", type: "reddit" },
+          ];
+          setRssFeeds(defaultFeeds);
+          await storage.setJSON("vijesti-rss-feeds", defaultFeeds);
+        }
+        
+        if (savedTitle) setWidgetTitle(savedTitle);
+      } catch (error) {
+        console.error("Error loading RSS feeds:", error);
+      }
+    };
+    loadData();
   }, []);
 
-  const addFeed = () => {
+  const addFeed = async () => {
     const newFeed: RSSFeed = {
       id: Date.now().toString(),
       name: "",
@@ -46,22 +56,34 @@ const AdminVijesti = () => {
     };
     const updated = [...rssFeeds, newFeed];
     setRssFeeds(updated);
-    localStorage.setItem("vijesti-rss-feeds", JSON.stringify(updated));
+    try {
+      await storage.setJSON("vijesti-rss-feeds", updated);
+    } catch (error) {
+      toast.error("Greška pri dodavanju RSS feeda");
+    }
   };
 
-  const updateFeed = (id: string, field: keyof RSSFeed, value: string) => {
+  const updateFeed = async (id: string, field: keyof RSSFeed, value: string) => {
     const updated = rssFeeds.map(f => 
       f.id === id ? { ...f, [field]: value } : f
     );
     setRssFeeds(updated);
-    localStorage.setItem("vijesti-rss-feeds", JSON.stringify(updated));
+    try {
+      await storage.setJSON("vijesti-rss-feeds", updated);
+    } catch (error) {
+      toast.error("Greška pri ažuriranju RSS feeda");
+    }
   };
 
-  const deleteFeed = (id: string) => {
+  const deleteFeed = async (id: string) => {
     const updated = rssFeeds.filter(f => f.id !== id);
     setRssFeeds(updated);
-    localStorage.setItem("vijesti-rss-feeds", JSON.stringify(updated));
-    toast.success("RSS feed obrisan");
+    try {
+      await storage.setJSON("vijesti-rss-feeds", updated);
+      toast.success("RSS feed obrisan");
+    } catch (error) {
+      toast.error("Greška pri brisanju RSS feeda");
+    }
   };
 
   const saveTitle = () => {
