@@ -20,28 +20,33 @@ const QuickNotes = () => {
       return;
     }
     
-    // Get existing notes
-    const notes: Note[] = await storage.getJSON<Note[]>("quick-notes-list") || [];
-    
-    // Add new note
-    const newNote: Note = {
-      id: Date.now().toString(),
-      content: note,
-      createdAt: new Date().toISOString()
-    };
-    
-    notes.unshift(newNote); // Add to beginning
-    
-    // Save to storage
-    await storage.setJSON("quick-notes-list", notes);
-    
-    // Clear the textarea
-    setNote("");
-    
-    toast.success("Bilješka sačuvana");
-    
-    // Dispatch custom event to notify NotesList widget
-    window.dispatchEvent(new Event("notesUpdated"));
+    try {
+      // Get existing notes
+      const notes: Note[] = await storage.getJSON<Note[]>("quick-notes-list") || [];
+      
+      // Add new note
+      const newNote: Note = {
+        id: Date.now().toString(),
+        content: note,
+        createdAt: new Date().toISOString()
+      };
+      
+      notes.unshift(newNote); // Add to beginning
+      
+      // Save to storage
+      await storage.setJSON("quick-notes-list", notes);
+      
+      // Clear the textarea
+      setNote("");
+      
+      toast.success("Bilješka sačuvana");
+      
+      // Dispatch custom event to notify NotesList widget
+      window.dispatchEvent(new Event("notesUpdated"));
+    } catch (error) {
+      console.error("Failed to save note:", error);
+      toast.error("Greška pri čuvanju bilješke. Provjerite Supabase vezu.");
+    }
   };
 
   return (

@@ -3,6 +3,7 @@ import { FileText, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface Note {
   id: string;
@@ -15,11 +16,16 @@ const NotesList = () => {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   useEffect(() => {
-    // Load from localStorage
-    const loadNotes = () => {
-      const savedNotes = localStorage.getItem("quick-notes-list");
-      if (savedNotes) {
-        setNotes(JSON.parse(savedNotes));
+    // Load from storage (Supabase or localStorage)
+    const loadNotes = async () => {
+      try {
+        const savedNotes = await storage.getJSON<Note[]>("quick-notes-list");
+        if (savedNotes) {
+          setNotes(savedNotes);
+        }
+      } catch (error) {
+        console.error("Failed to load notes:", error);
+        toast.error("Greška pri učitavanju bilješki");
       }
     };
 
@@ -40,13 +46,18 @@ const NotesList = () => {
     };
   }, []);
 
-  const deleteNote = (id: string) => {
-    const updated = notes.filter(n => n.id !== id);
-    setNotes(updated);
-    localStorage.setItem("quick-notes-list", JSON.stringify(updated));
-    setSelectedNote(null);
-    toast.success("Bilješka obrisana");
-    window.dispatchEvent(new Event("notesUpdated"));
+  const deleteNote = async (id: string) => {
+    try {
+      const updated = notes.filter(n => n.id !== id);
+      setNotes(updated);
+      await storage.setJSON("quick-notes-list", updated);
+      setSelectedNote(null);
+      toast.success("Bilješka obrisana");
+      window.dispatchEvent(new Event("notesUpdated"));
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+      toast.error("Greška pri brisanju bilješke");
+    }
   };
 
   const formatDate = (dateString: string) => {

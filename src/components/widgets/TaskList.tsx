@@ -17,17 +17,27 @@ const TaskList = () => {
 
   useEffect(() => {
     const loadTasks = async () => {
-      const savedTasks = await storage.getJSON<Task[]>("task-list");
-      if (savedTasks) {
-        setTasks(savedTasks);
+      try {
+        const savedTasks = await storage.getJSON<Task[]>("task-list");
+        if (savedTasks) {
+          setTasks(savedTasks);
+        }
+      } catch (error) {
+        console.error("Failed to load tasks:", error);
+        toast.error("Greška pri učitavanju zadataka");
       }
     };
     loadTasks();
   }, []);
 
   const saveTasks = async (updatedTasks: Task[]) => {
-    setTasks(updatedTasks);
-    await storage.setJSON("task-list", updatedTasks);
+    try {
+      setTasks(updatedTasks);
+      await storage.setJSON("task-list", updatedTasks);
+    } catch (error) {
+      console.error("Failed to save tasks:", error);
+      toast.error("Greška pri čuvanju zadataka. Provjerite Supabase vezu.");
+    }
   };
 
   const toggleTask = (id: string) => {
