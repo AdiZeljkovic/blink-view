@@ -28,7 +28,14 @@ const Calendar = () => {
         toast.error("Greška pri učitavanju događaja");
       }
     };
+    
+    // Load events initially
     loadEvents();
+    
+    // Poll for updates every 5 seconds
+    const interval = setInterval(loadEvents, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const today = new Date();
