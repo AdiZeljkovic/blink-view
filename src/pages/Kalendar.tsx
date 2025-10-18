@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { bs } from "date-fns/locale";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface Event {
   id: string;
@@ -35,21 +36,34 @@ const Kalendar = () => {
     time: "12:00"
   });
 
-  // Load events from localStorage
+  // Load events from storage
   useEffect(() => {
-    const savedEvents = localStorage.getItem("calendar-events");
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
-    }
+    const loadEvents = async () => {
+      try {
+        const savedEvents = await storage.getJSON<Event[]>("calendar-events");
+        if (savedEvents) {
+          setEvents(savedEvents);
+        }
+      } catch (error) {
+        console.error("Error loading calendar events:", error);
+        toast.error("Greška pri učitavanju događaja");
+      }
+    };
+    loadEvents();
   }, []);
 
-  // Save events to localStorage
-  const saveEvents = (updatedEvents: Event[]) => {
+  // Save events to storage
+  const saveEvents = async (updatedEvents: Event[]) => {
     setEvents(updatedEvents);
-    localStorage.setItem("calendar-events", JSON.stringify(updatedEvents));
+    try {
+      await storage.setJSON("calendar-events", updatedEvents);
+    } catch (error) {
+      console.error("Error saving calendar events:", error);
+      toast.error("Greška pri čuvanju događaja");
+    }
   };
 
-  const addEvent = () => {
+  const addEvent = async () => {
     if (!newEvent.title.trim()) {
       toast.error("Unesite naziv događaja");
       return;
@@ -64,15 +78,15 @@ const Kalendar = () => {
       color: `hsl(${Math.random() * 360}, 70%, 50%)`
     };
 
-    saveEvents([...events, event]);
+    await saveEvents([...events, event]);
     setNewEvent({ title: "", description: "", time: "12:00" });
     setEventDate(new Date());
     setIsDialogOpen(false);
     toast.success("Događaj dodan");
   };
 
-  const deleteEvent = (id: string) => {
-    saveEvents(events.filter(e => e.id !== id));
+  const deleteEvent = async (id: string) => {
+    await saveEvents(events.filter(e => e.id !== id));
     toast.success("Događaj obrisan");
   };
 
