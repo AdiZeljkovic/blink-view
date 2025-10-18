@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Gamepad2, Newspaper, Video, MessageSquare, RefreshCw, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface FeedItem {
   title: string;
@@ -49,9 +50,8 @@ const Gaming = () => {
     setRefreshing(!silent);
     
     try {
-      // Load feeds from localStorage or use defaults
-      const savedFeeds = localStorage.getItem("gaming-rss-feeds");
-      const feeds: RSSFeed[] = savedFeeds ? JSON.parse(savedFeeds) : [
+      const savedFeeds = await storage.getJSON<RSSFeed[]>("gaming-rss-feeds");
+      const feeds: RSSFeed[] = savedFeeds || [
         { id: "1", name: "IGN", url: "https://www.ign.com/feed.xml", type: "news" },
         { id: "2", name: "Polygon", url: "https://www.polygon.com/rss/index.xml", type: "news" },
         { id: "3", name: "r/gaming", url: "https://www.reddit.com/r/gaming.json", type: "reddit" },

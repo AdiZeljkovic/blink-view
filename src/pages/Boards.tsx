@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface Task {
   id: string;
@@ -53,29 +54,37 @@ const Boards = () => {
     label: "",
   });
 
-  // Load data from localStorage
+  // Load data from storage
   useEffect(() => {
-    const savedTasks = localStorage.getItem("kanban-tasks");
-    const savedColumns = localStorage.getItem("kanban-columns");
-    
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    }
-    if (savedColumns) {
-      setColumns(JSON.parse(savedColumns));
-    }
+    const loadData = async () => {
+      try {
+        const savedTasks = await storage.getJSON<Task[]>("kanban-tasks");
+        const savedColumns = await storage.getJSON<Column[]>("kanban-columns");
+        
+        if (savedTasks) {
+          setTasks(savedTasks);
+        }
+        if (savedColumns) {
+          setColumns(savedColumns);
+        }
+      } catch (error) {
+        console.error("Error loading kanban data:", error);
+        toast.error("Greška pri učitavanju podataka");
+      }
+    };
+    loadData();
   }, []);
 
   // Save tasks
-  const saveTasks = (updatedTasks: Task[]) => {
+  const saveTasks = async (updatedTasks: Task[]) => {
     setTasks(updatedTasks);
-    localStorage.setItem("kanban-tasks", JSON.stringify(updatedTasks));
+    await storage.setJSON("kanban-tasks", updatedTasks);
   };
 
   // Save columns
-  const saveColumns = (updatedColumns: Column[]) => {
+  const saveColumns = async (updatedColumns: Column[]) => {
     setColumns(updatedColumns);
-    localStorage.setItem("kanban-columns", JSON.stringify(updatedColumns));
+    await storage.setJSON("kanban-columns", updatedColumns);
   };
 
   const addTask = () => {

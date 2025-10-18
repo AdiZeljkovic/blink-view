@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
+import { storage } from "@/lib/storage";
 
 interface RSSFeed {
   id: string;
@@ -18,24 +19,33 @@ const AdminGaming = () => {
   const [widgetTitle, setWidgetTitle] = useState("Gaming Hub");
 
   useEffect(() => {
-    const savedFeeds = localStorage.getItem("gaming-rss-feeds");
-    const savedTitle = localStorage.getItem("gaming-widget-title");
-    
-    if (savedFeeds) {
-      setRssFeeds(JSON.parse(savedFeeds));
-    } else {
-      // Default feeds
-      setRssFeeds([
-        { id: "1", name: "IGN", url: "https://www.ign.com/feed.xml", type: "news" },
-        { id: "2", name: "Polygon", url: "https://www.polygon.com/rss/index.xml", type: "news" },
-        { id: "3", name: "r/gaming", url: "https://www.reddit.com/r/gaming.json", type: "reddit" },
-      ]);
-    }
-    
-    if (savedTitle) setWidgetTitle(savedTitle);
+    const loadData = async () => {
+      try {
+        const savedFeeds = await storage.getJSON<RSSFeed[]>("gaming-rss-feeds");
+        const savedTitle = localStorage.getItem("gaming-widget-title");
+        
+        if (savedFeeds) {
+          setRssFeeds(savedFeeds);
+        } else {
+          const defaultFeeds: RSSFeed[] = [
+            { id: "1", name: "IGN", url: "https://www.ign.com/feed.xml", type: "news" },
+            { id: "2", name: "Polygon", url: "https://www.polygon.com/rss/index.xml", type: "news" },
+            { id: "3", name: "r/gaming", url: "https://www.reddit.com/r/gaming.json", type: "reddit" },
+          ];
+          setRssFeeds(defaultFeeds);
+          await storage.setJSON("gaming-rss-feeds", defaultFeeds);
+        }
+        
+        if (savedTitle) setWidgetTitle(savedTitle);
+      } catch (error) {
+        console.error("Error loading gaming RSS feeds:", error);
+        toast.error("Greška pri učitavanju podataka");
+      }
+    };
+    loadData();
   }, []);
 
-  const addFeed = () => {
+  const addFeed = async () => {
     const newFeed: RSSFeed = {
       id: Date.now().toString(),
       name: "",
@@ -44,21 +54,21 @@ const AdminGaming = () => {
     };
     const updated = [...rssFeeds, newFeed];
     setRssFeeds(updated);
-    localStorage.setItem("gaming-rss-feeds", JSON.stringify(updated));
+    await storage.setJSON("gaming-rss-feeds", updated);
   };
 
-  const updateFeed = (id: string, field: keyof RSSFeed, value: string) => {
+  const updateFeed = async (id: string, field: keyof RSSFeed, value: string) => {
     const updated = rssFeeds.map(f => 
       f.id === id ? { ...f, [field]: value } : f
     );
     setRssFeeds(updated);
-    localStorage.setItem("gaming-rss-feeds", JSON.stringify(updated));
+    await storage.setJSON("gaming-rss-feeds", updated);
   };
 
-  const deleteFeed = (id: string) => {
+  const deleteFeed = async (id: string) => {
     const updated = rssFeeds.filter(f => f.id !== id);
     setRssFeeds(updated);
-    localStorage.setItem("gaming-rss-feeds", JSON.stringify(updated));
+    await storage.setJSON("gaming-rss-feeds", updated);
     toast.success("RSS feed obrisan");
   };
 

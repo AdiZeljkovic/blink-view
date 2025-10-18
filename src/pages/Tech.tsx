@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Cpu, Newspaper, Video, MessageSquare, RefreshCw, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface FeedItem {
   title: string;
@@ -43,8 +44,8 @@ const Tech = () => {
     setRefreshing(!silent);
     
     try {
-      const savedFeeds = localStorage.getItem("tech-rss-feeds");
-      const feeds: RSSFeed[] = savedFeeds ? JSON.parse(savedFeeds) : [
+      const savedFeeds = await storage.getJSON<RSSFeed[]>("tech-rss-feeds");
+      const feeds: RSSFeed[] = savedFeeds || [
         { id: "1", name: "TechCrunch", url: "https://techcrunch.com/feed/", type: "news" },
         { id: "2", name: "The Verge", url: "https://www.theverge.com/rss/index.xml", type: "news" },
         { id: "3", name: "r/technology", url: "https://www.reddit.com/r/technology.json", type: "reddit" },

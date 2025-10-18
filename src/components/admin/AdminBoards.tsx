@@ -6,16 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
+import { storage } from "@/lib/storage";
 
 const AdminBoards = () => {
   const [columns, setColumns] = useState<any[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("kanban-columns");
-    if (saved) setColumns(JSON.parse(saved));
+    const loadData = async () => {
+      try {
+        const saved = await storage.getJSON<any[]>("kanban-columns");
+        if (saved) setColumns(saved);
+      } catch (error) {
+        console.error("Error loading kanban columns:", error);
+        toast.error("Greška pri učitavanju podataka");
+      }
+    };
+    loadData();
   }, []);
 
-  const addColumn = () => {
+  const addColumn = async () => {
     const newColumn = {
       id: Date.now().toString(),
       title: "Nova Kolona",
@@ -23,26 +32,26 @@ const AdminBoards = () => {
     };
     const updated = [...columns, newColumn];
     setColumns(updated);
-    localStorage.setItem("kanban-columns", JSON.stringify(updated));
+    await storage.setJSON("kanban-columns", updated);
     toast.success("Kolona dodana");
   };
 
-  const updateColumnTitle = (id: string, title: string) => {
+  const updateColumnTitle = async (id: string, title: string) => {
     const updated = columns.map(c => 
       c.id === id ? { ...c, title } : c
     );
     setColumns(updated);
-    localStorage.setItem("kanban-columns", JSON.stringify(updated));
+    await storage.setJSON("kanban-columns", updated);
   };
 
-  const deleteColumn = (id: string) => {
+  const deleteColumn = async (id: string) => {
     const updated = columns.filter(c => c.id !== id);
     setColumns(updated);
-    localStorage.setItem("kanban-columns", JSON.stringify(updated));
+    await storage.setJSON("kanban-columns", updated);
     toast.success("Kolona obrisana");
   };
 
-  const addTask = (columnId: string) => {
+  const addTask = async (columnId: string) => {
     const newTask = {
       id: Date.now().toString(),
       title: "",
@@ -55,10 +64,10 @@ const AdminBoards = () => {
       c.id === columnId ? { ...c, tasks: [...c.tasks, newTask] } : c
     );
     setColumns(updated);
-    localStorage.setItem("kanban-columns", JSON.stringify(updated));
+    await storage.setJSON("kanban-columns", updated);
   };
 
-  const updateTask = (columnId: string, taskId: string, field: string, value: any) => {
+  const updateTask = async (columnId: string, taskId: string, field: string, value: any) => {
     const updated = columns.map(c => {
       if (c.id === columnId) {
         return {
@@ -71,10 +80,10 @@ const AdminBoards = () => {
       return c;
     });
     setColumns(updated);
-    localStorage.setItem("kanban-columns", JSON.stringify(updated));
+    await storage.setJSON("kanban-columns", updated);
   };
 
-  const deleteTask = (columnId: string, taskId: string) => {
+  const deleteTask = async (columnId: string, taskId: string) => {
     const updated = columns.map(c => {
       if (c.id === columnId) {
         return {
@@ -85,7 +94,7 @@ const AdminBoards = () => {
       return c;
     });
     setColumns(updated);
-    localStorage.setItem("kanban-columns", JSON.stringify(updated));
+    await storage.setJSON("kanban-columns", updated);
     toast.success("Task obrisan");
   };
 

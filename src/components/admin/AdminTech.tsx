@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
+import { storage } from "@/lib/storage";
 
 interface RSSFeed {
   id: string;
@@ -18,24 +19,33 @@ const AdminTech = () => {
   const [widgetTitle, setWidgetTitle] = useState("Tech Hub");
 
   useEffect(() => {
-    const savedFeeds = localStorage.getItem("tech-rss-feeds");
-    const savedTitle = localStorage.getItem("tech-widget-title");
-    
-    if (savedFeeds) {
-      setRssFeeds(JSON.parse(savedFeeds));
-    } else {
-      // Default feeds
-      setRssFeeds([
-        { id: "1", name: "TechCrunch", url: "https://techcrunch.com/feed/", type: "news" },
-        { id: "2", name: "The Verge", url: "https://www.theverge.com/rss/index.xml", type: "news" },
-        { id: "3", name: "r/technology", url: "https://www.reddit.com/r/technology.json", type: "reddit" },
-      ]);
-    }
-    
-    if (savedTitle) setWidgetTitle(savedTitle);
+    const loadData = async () => {
+      try {
+        const savedFeeds = await storage.getJSON<RSSFeed[]>("tech-rss-feeds");
+        const savedTitle = localStorage.getItem("tech-widget-title");
+        
+        if (savedFeeds) {
+          setRssFeeds(savedFeeds);
+        } else {
+          const defaultFeeds: RSSFeed[] = [
+            { id: "1", name: "TechCrunch", url: "https://techcrunch.com/feed/", type: "news" },
+            { id: "2", name: "The Verge", url: "https://www.theverge.com/rss/index.xml", type: "news" },
+            { id: "3", name: "r/technology", url: "https://www.reddit.com/r/technology.json", type: "reddit" },
+          ];
+          setRssFeeds(defaultFeeds);
+          await storage.setJSON("tech-rss-feeds", defaultFeeds);
+        }
+        
+        if (savedTitle) setWidgetTitle(savedTitle);
+      } catch (error) {
+        console.error("Error loading tech RSS feeds:", error);
+        toast.error("Greška pri učitavanju podataka");
+      }
+    };
+    loadData();
   }, []);
 
-  const addFeed = () => {
+  const addFeed = async () => {
     const newFeed: RSSFeed = {
       id: Date.now().toString(),
       name: "",
@@ -44,21 +54,21 @@ const AdminTech = () => {
     };
     const updated = [...rssFeeds, newFeed];
     setRssFeeds(updated);
-    localStorage.setItem("tech-rss-feeds", JSON.stringify(updated));
+    await storage.setJSON("tech-rss-feeds", updated);
   };
 
-  const updateFeed = (id: string, field: keyof RSSFeed, value: string) => {
+  const updateFeed = async (id: string, field: keyof RSSFeed, value: string) => {
     const updated = rssFeeds.map(f => 
       f.id === id ? { ...f, [field]: value } : f
     );
     setRssFeeds(updated);
-    localStorage.setItem("tech-rss-feeds", JSON.stringify(updated));
+    await storage.setJSON("tech-rss-feeds", updated);
   };
 
-  const deleteFeed = (id: string) => {
+  const deleteFeed = async (id: string) => {
     const updated = rssFeeds.filter(f => f.id !== id);
     setRssFeeds(updated);
-    localStorage.setItem("tech-rss-feeds", JSON.stringify(updated));
+    await storage.setJSON("tech-rss-feeds", updated);
     toast.success("RSS feed obrisan");
   };
 

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface BookmarkItem {
   id: string;
@@ -54,23 +55,31 @@ const Bookmarks = () => {
     isReadLater: false,
   });
 
-  // Load data from localStorage
+  // Load data from storage
   useEffect(() => {
-    const savedBookmarks = localStorage.getItem("bookmarks-data");
-    const savedCategories = localStorage.getItem("bookmarks-categories");
-    
-    if (savedBookmarks) {
-      setBookmarks(JSON.parse(savedBookmarks));
-    }
-    if (savedCategories) {
-      setCategories(JSON.parse(savedCategories));
-    }
+    const loadData = async () => {
+      try {
+        const savedBookmarks = await storage.getJSON<BookmarkItem[]>("bookmarks-data");
+        const savedCategories = await storage.getJSON<Category[]>("bookmarks-categories");
+        
+        if (savedBookmarks) {
+          setBookmarks(savedBookmarks);
+        }
+        if (savedCategories) {
+          setCategories(savedCategories);
+        }
+      } catch (error) {
+        console.error("Error loading bookmarks:", error);
+        toast.error("Greška pri učitavanju podataka");
+      }
+    };
+    loadData();
   }, []);
 
   // Save bookmarks
-  const saveBookmarks = (updatedBookmarks: BookmarkItem[]) => {
+  const saveBookmarks = async (updatedBookmarks: BookmarkItem[]) => {
     setBookmarks(updatedBookmarks);
-    localStorage.setItem("bookmarks-data", JSON.stringify(updatedBookmarks));
+    await storage.setJSON("bookmarks-data", updatedBookmarks);
   };
 
   // Extract favicon from URL
@@ -141,7 +150,7 @@ const Bookmarks = () => {
     );
   };
 
-  const addCategory = () => {
+  const addCategory = async () => {
     const name = prompt("Unesite naziv kategorije:");
     if (!name?.trim()) return;
 
@@ -153,7 +162,7 @@ const Bookmarks = () => {
 
     const updatedCategories = [...categories, newCategory];
     setCategories(updatedCategories);
-    localStorage.setItem("bookmarks-categories", JSON.stringify(updatedCategories));
+    await storage.setJSON("bookmarks-categories", updatedCategories);
     toast.success("Kategorija dodana");
   };
 
