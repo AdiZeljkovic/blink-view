@@ -11,6 +11,12 @@ import Vijesti from "./pages/Vijesti";
 import Kalendar from "./pages/Kalendar";
 import Boards from "./pages/Boards";
 import Bookmarks from "./pages/Bookmarks";
+import Finance from "./pages/Finance";
+import CRM from "./pages/CRM";
+import ClientDetail from "./pages/ClientDetail";
+import FocusTimer from "./pages/FocusTimer";
+import HabitsGoals from "./pages/HabitsGoals";
+import MoodTracker from "./pages/MoodTracker";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
@@ -34,6 +40,12 @@ const App = () => (
             <Route path="/kalendar" element={<Kalendar />} />
             <Route path="/boards" element={<Boards />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
+            <Route path="/finance" element={<Finance />} />
+            <Route path="/crm" element={<CRM />} />
+            <Route path="/crm/:clientId" element={<ClientDetail />} />
+            <Route path="/focus-timer" element={<FocusTimer />} />
+            <Route path="/habits-goals" element={<HabitsGoals />} />
+            <Route path="/mood-tracker" element={<MoodTracker />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

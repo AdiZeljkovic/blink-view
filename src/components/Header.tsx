@@ -12,6 +12,11 @@ const Header = () => {
     { label: "Kalendar", path: "/kalendar" },
     { label: "Boards", path: "/boards" },
     { label: "Bookmarks", path: "/bookmarks" },
+    { label: "Finansije", path: "/finance" },
+    { label: "CRM", path: "/crm" },
+    { label: "Fokus Timer", path: "/focus-timer" },
+    { label: "Navike", path: "/habits-goals" },
+    { label: "Mood", path: "/mood-tracker" },
     { label: "Admin Panel", path: "/admin" }
   ];
 
