@@ -11,8 +11,11 @@ import Vaktija from "@/components/widgets/Vaktija";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <main className="flex-1 container mx-auto px-6 py-8 max-w-[1600px]">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Background Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      
+      <main className="flex-1 container mx-auto px-6 py-8 max-w-[1600px] relative z-10">
         <div className="space-y-8">
           {/* Central Block - Clock and Search */}
           <section className="py-6">

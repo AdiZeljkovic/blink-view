@@ -11,26 +11,23 @@ const Clock = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const hours = time.getHours();
-  const getGreeting = () => {
-    if (hours < 12) return "Dobro jutro";
-    if (hours < 18) return "Dobar dan";
-    return "Dobro veče";
-  };
-
-  const formattedTime = time.toLocaleTimeString("bs-BA", {
-    hour: "2-digit",
-    minute: "2-digit",
+  const hours = time.getHours().toString().padStart(2, "0");
+  const minutes = time.getMinutes().toString().padStart(2, "0");
+  const date = time.toLocaleDateString("bs-BA", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   return (
-    <div className="text-center space-y-4">
-      <div className="font-mono-heading text-5xl font-bold tracking-tight">
-        {formattedTime}
+    <div className="text-center py-12 animate-fade-in">
+      <div className="text-8xl font-display font-bold tracking-tight mb-4 gradient-text animate-scale-in">
+        {hours}
+        <span className="animate-pulse mx-1">:</span>
+        {minutes}
       </div>
-      <p className="text-base text-muted-foreground">
-        Danas je dan za uspjeh.
-      </p>
+      <div className="text-xl text-muted-foreground font-medium tracking-wide">{date}</div>
     </div>
   );
 };
