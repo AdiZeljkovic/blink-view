@@ -1,13 +1,12 @@
-import Clock from "@/components/Clock";
+import ClockWeather from "@/components/ClockWeather";
 import SearchBar from "@/components/SearchBar";
 import TaskList from "@/components/widgets/TaskList";
 import Calendar from "@/components/widgets/Calendar";
-import Weather from "@/components/widgets/Weather";
+import Vaktija from "@/components/widgets/Vaktija";
 import QuickNotes from "@/components/widgets/QuickNotes";
 import HomelabApps from "@/components/widgets/HomelabApps";
 import Bookmarks from "@/components/widgets/Bookmarks";
 import NotesList from "@/components/widgets/NotesList";
-import Vaktija from "@/components/widgets/Vaktija";
 
 const Index = () => {
   return (
@@ -17,9 +16,9 @@ const Index = () => {
       
       <main className="flex-1 container mx-auto px-6 py-8 max-w-[1600px] relative z-10">
         <div className="space-y-8">
-          {/* Central Block - Clock and Search */}
+          {/* Central Block - Clock, Weather and Search */}
           <section className="py-6">
-            <Clock />
+            <ClockWeather />
           </section>
 
           <section className="max-w-3xl mx-auto">
@@ -30,7 +29,6 @@ const Index = () => {
           <section className="grid grid-cols-1 lg:grid-cols-4 gap-6 pt-4">
             {/* Left Column */}
             <div className="lg:col-span-1 space-y-6">
-              <Weather />
               <Vaktija />
               <Bookmarks />
             </div>
