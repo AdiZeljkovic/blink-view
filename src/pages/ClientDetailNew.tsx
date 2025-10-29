@@ -12,34 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { storage } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, FileText, CheckSquare, Briefcase, User, StickyNote, Trash2 } from "lucide-react";
-import type { Client } from "./CRMNew";
-
-export interface Invoice {
-  id: string;
-  clientId: string;
-  brojFakture: string;
-  iznos: number;
-  datumIzdavanja: string;
-  rokPlacanja: string;
-  status: "nacrt" | "poslano" | "placeno" | "kasni";
-}
-
-interface Task {
-  id: string;
-  clientId: string;
-  naziv: string;
-  rok: string;
-  completed: boolean;
-}
-
-interface Deal {
-  id: string;
-  clientId: string;
-  naziv: string;
-  vrijednost: number;
-  status: "novi" | "pregovori" | "ponuda" | "dobijeno" | "izgubljeno";
-}
+import { ArrowLeft, Plus, FileText, CheckSquare, Briefcase, User, StickyNote, Trash2, MessageSquare } from "lucide-react";
+import CommunicationLog from "@/components/crm/CommunicationLog";
+import type { Client, Invoice, Task, Deal, CommunicationEntry } from "@/types/crm";
 
 const ClientDetailNew = () => {
   const { clientId } = useParams();
@@ -48,6 +23,7 @@ const ClientDetailNew = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [communications, setCommunications] = useState<CommunicationEntry[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [openInvoiceDialog, setOpenInvoiceDialog] = useState(false);
   const [openTaskDialog, setOpenTaskDialog] = useState(false);
@@ -83,6 +59,9 @@ const ClientDetailNew = () => {
 
         const allDeals = await storage.getJSON<Deal[]>("crm-deals") || [];
         setDeals(allDeals.filter((d) => d.clientId === clientId));
+
+        const allComms = await storage.getJSON<CommunicationEntry[]>("crm-communications") || [];
+        setCommunications(allComms.filter((c) => c.clientId === clientId));
       } catch (error) {
         console.error("Error loading data:", error);
       }
@@ -192,6 +171,34 @@ const ClientDetailNew = () => {
     }
   };
 
+  const addCommunication = async (entry: Omit<CommunicationEntry, "id">) => {
+    const newEntry: CommunicationEntry = {
+      ...entry,
+      id: Date.now().toString(),
+    };
+
+    try {
+      const allComms = await storage.getJSON<CommunicationEntry[]>("crm-communications") || [];
+      await storage.setJSON("crm-communications", [...allComms, newEntry]);
+      setCommunications([...communications, newEntry]);
+
+      // Update client's last contact date
+      if (client) {
+        const updatedClient = { ...client, datumZadnjegKontakta: entry.datum };
+        setClient(updatedClient);
+        
+        const allClients = await storage.getJSON<Client[]>("crm-clients") || [];
+        await storage.setJSON("crm-clients", 
+          allClients.map(c => c.id === clientId ? updatedClient : c)
+        );
+      }
+
+      toast({ title: "Uspjeh", description: "Komunikacija je zabilježena" });
+    } catch (error) {
+      toast({ title: "Greška", description: "Nije moguće dodati komunikaciju", variant: "destructive" });
+    }
+  };
+
   const getStatusColor = (status: Invoice["status"]) => {
     switch (status) {
       case "placeno":
@@ -225,7 +232,7 @@ const ClientDetailNew = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 container mx-auto px-6 py-8 max-w-[1400px]">
-        <Button variant="ghost" onClick={() => navigate("/crm")} className="mb-6">
+        <Button variant="ghost" onClick={() => navigate("/crm/clients")} className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Nazad na Klijente
         </Button>
@@ -251,6 +258,10 @@ const ClientDetailNew = () => {
             <TabsTrigger value="notes" className="gap-2">
               <StickyNote className="w-4 h-4" />
               Bilješke
+            </TabsTrigger>
+            <TabsTrigger value="communications" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Dnevnik Komunikacije
             </TabsTrigger>
           </TabsList>
 
@@ -484,6 +495,15 @@ const ClientDetailNew = () => {
                 <p className="text-xs text-muted-foreground mt-2">Bilješke se automatski čuvaju</p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Communications Tab */}
+          <TabsContent value="communications" className="animate-fade-in">
+            <CommunicationLog
+              clientId={clientId!}
+              entries={communications}
+              onAddEntry={addCommunication}
+            />
           </TabsContent>
         </Tabs>
       </main>

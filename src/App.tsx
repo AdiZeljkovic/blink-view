@@ -12,7 +12,8 @@ import Kalendar from "./pages/KalendarNew";
 import Boards from "./pages/Boards";
 import Bookmarks from "./pages/Bookmarks";
 import Finance from "./pages/Finance";
-import CRM from "./pages/CRMNew";
+import CRMDashboard from "./pages/CRMDashboard";
+import CRMClients from "./pages/CRMNew";
 import ClientDetail from "./pages/ClientDetailNew";
 import FocusTimer from "./pages/FocusTimer";
 import HabitsGoals from "./pages/HabitsGoalsNew";
@@ -41,8 +42,9 @@ const App = () => (
             <Route path="/boards" element={<Boards />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
             <Route path="/finance" element={<Finance />} />
-            <Route path="/crm" element={<CRM />} />
-            <Route path="/crm/:clientId" element={<ClientDetail />} />
+            <Route path="/crm" element={<CRMDashboard />} />
+            <Route path="/crm/clients" element={<CRMClients />} />
+            <Route path="/crm/clients/:clientId" element={<ClientDetail />} />
             <Route path="/focus-timer" element={<FocusTimer />} />
             <Route path="/habits-goals" element={<HabitsGoals />} />
             <Route path="/mood-tracker" element={<MoodTracker />} />

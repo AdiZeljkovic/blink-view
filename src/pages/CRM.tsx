@@ -9,16 +9,7 @@ import { storage } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, User, Mail, Phone, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-export interface Client {
-  id: string;
-  ime: string;
-  kompanija: string;
-  email: string;
-  telefon: string;
-  adresa: string;
-  biljeske: string;
-}
+import type { Client } from "@/types/crm";
 
 const CRM = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -177,7 +168,7 @@ const CRM = () => {
               <Card
                 key={client.id}
                 className="cursor-pointer hover:shadow-lg transition-all"
-                onClick={() => navigate(`/crm/${client.id}`)}
+                onClick={() => navigate(`/crm/clients/${client.id}`)}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

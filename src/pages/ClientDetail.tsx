@@ -11,17 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { storage } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, FileText } from "lucide-react";
-import type { Client } from "./CRM";
-
-export interface Invoice {
-  id: string;
-  clientId: string;
-  brojFakture: string;
-  iznos: number;
-  datumIzdavanja: string;
-  rokPlacanja: string;
-  status: "nacrt" | "poslano" | "placeno" | "kasni";
-}
+import type { Client, Invoice } from "@/types/crm";
 
 const ClientDetail = () => {
   const { clientId } = useParams();
@@ -125,7 +115,7 @@ const ClientDetail = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 container mx-auto px-6 py-8 max-w-[1400px]">
-        <Button variant="ghost" onClick={() => navigate("/crm")} className="mb-6">
+        <Button variant="ghost" onClick={() => navigate("/crm/clients")} className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Nazad na Klijente
         </Button>

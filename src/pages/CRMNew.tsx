@@ -10,24 +10,7 @@ import { storage } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, User, Mail, Phone, Building2, Briefcase, GripVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-export interface Client {
-  id: string;
-  ime: string;
-  kompanija: string;
-  email: string;
-  telefon: string;
-  adresa: string;
-  biljeske: string;
-}
-
-interface Deal {
-  id: string;
-  clientId: string;
-  naziv: string;
-  vrijednost: number;
-  status: "novi" | "pregovori" | "ponuda" | "dobijeno" | "izgubljeno";
-}
+import type { Client, Deal } from "@/types/crm";
 
 const CRMNew = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -179,7 +162,18 @@ const CRMNew = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 container mx-auto px-6 py-8 max-w-[1600px]">
-        <h1 className="text-4xl font-bold font-display mb-8">CRM - Upravljanje Klijentima</h1>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold">CRM - Klijenti</h1>
+            <Button 
+              variant="link" 
+              onClick={() => navigate("/crm")}
+              className="p-0 h-auto mt-2"
+            >
+              ← Nazad na Dashboard
+            </Button>
+          </div>
+        </div>
 
         <Tabs defaultValue="clients" className="space-y-6">
           <TabsList className="glass-card">
@@ -215,7 +209,7 @@ const CRMNew = () => {
                   <Card
                     key={client.id}
                     className="cursor-pointer hover:shadow-glow-md hover:-translate-y-1 transition-all duration-300 animate-scale-in"
-                    onClick={() => navigate(`/crm/${client.id}`)}
+                    onClick={() => navigate(`/crm/clients/${client.id}`)}
                   >
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
