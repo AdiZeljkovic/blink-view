@@ -8,6 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { storage } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { addWeeks, addMonths, subWeeks, subMonths } from "date-fns";
+import PeriodSelector from "@/components/finance/PeriodSelector";
+import PeriodNavigator from "@/components/finance/PeriodNavigator";
+import { filterTransactionsByPeriod } from "@/utils/dateFilters";
 
 interface Transaction {
   id: string;
@@ -23,6 +27,8 @@ const Finance = () => {
   const [iznos, setIznos] = useState("");
   const [tip, setTip] = useState<"prihod" | "rashod">("prihod");
   const [datum, setDatum] = useState(new Date().toISOString().split("T")[0]);
+  const [period, setPeriod] = useState<"week" | "month">("month");
+  const [currentDate, setCurrentDate] = useState(new Date());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -87,10 +93,23 @@ const Finance = () => {
     });
   };
 
-  const totalPrihod = transactions
+  const handleNavigate = (direction: "prev" | "next") => {
+    setCurrentDate(prev => {
+      if (period === "week") {
+        return direction === "prev" ? subWeeks(prev, 1) : addWeeks(prev, 1);
+      } else {
+        return direction === "prev" ? subMonths(prev, 1) : addMonths(prev, 1);
+      }
+    });
+  };
+
+  // Filter transactions by selected period
+  const filteredTransactions = filterTransactionsByPeriod(transactions, period, currentDate);
+
+  const totalPrihod = filteredTransactions
     .filter((t) => t.tip === "prihod")
     .reduce((sum, t) => sum + t.iznos, 0);
-  const totalRashod = transactions
+  const totalRashod = filteredTransactions
     .filter((t) => t.tip === "rashod")
     .reduce((sum, t) => sum + t.iznos, 0);
   const balans = totalPrihod - totalRashod;
@@ -99,6 +118,20 @@ const Finance = () => {
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 container mx-auto px-6 py-8 max-w-[1400px]">
         <h1 className="text-4xl font-bold mb-8">Kućne Finansije</h1>
+
+        {/* Time Navigation Controls */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <PeriodSelector period={period} onPeriodChange={setPeriod} />
+              <PeriodNavigator 
+                period={period} 
+                currentDate={currentDate} 
+                onNavigate={handleNavigate}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
@@ -206,14 +239,14 @@ const Finance = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.length === 0 ? (
+                {filteredTransactions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      Nema transakcija
+                      Nema transakcija za odabrani period
                     </TableCell>
                   </TableRow>
                 ) : (
-                  transactions.map((t) => (
+                  filteredTransactions.map((t) => (
                     <TableRow key={t.id}>
                       <TableCell>{t.datum}</TableCell>
                       <TableCell>{t.opis}</TableCell>
