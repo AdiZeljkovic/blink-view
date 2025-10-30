@@ -7,6 +7,7 @@ import QuickNotes from "@/components/widgets/QuickNotes";
 import HomelabApps from "@/components/widgets/HomelabApps";
 import Bookmarks from "@/components/widgets/Bookmarks";
 import NotesList from "@/components/widgets/NotesList";
+import MyDayWidget from "@/components/widgets/MyDayWidget";
 
 const Index = () => {
   return (
@@ -35,6 +36,7 @@ const Index = () => {
 
             {/* Center Column */}
             <div className="lg:col-span-2 space-y-6">
+              <MyDayWidget />
               <HomelabApps />
               <QuickNotes />
             </div>

@@ -399,12 +399,13 @@ const ClientDetailNew = () => {
                       <TableHead>Datum Izdavanja</TableHead>
                       <TableHead>Rok Plaćanja</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Akcije</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {invoices.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
                           Nema faktura za ovog klijenta
                         </TableCell>
                       </TableRow>
@@ -419,6 +420,32 @@ const ClientDetailNew = () => {
                             <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(inv.status)}`}>
                               {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
                             </span>
+                          </TableCell>
+                          <TableCell>
+                            {inv.status === "placeno" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  try {
+                                    const financeTransactions = await storage.getJSON<any[]>("finance-transactions") || [];
+                                    const newTransaction = {
+                                      id: Date.now().toString(),
+                                      opis: `Faktura #${inv.brojFakture} - ${client?.ime}`,
+                                      iznos: inv.iznos,
+                                      tip: "prihod" as const,
+                                      datum: inv.datumIzdavanja,
+                                    };
+                                    await storage.setJSON("finance-transactions", [newTransaction, ...financeTransactions]);
+                                    toast({ title: "Uspjeh", description: "Transakcija dodana u Finansije" });
+                                  } catch (error) {
+                                    toast({ title: "Greška", description: "Nije moguće dodati transakciju", variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                Zabilježi u Finansije
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))

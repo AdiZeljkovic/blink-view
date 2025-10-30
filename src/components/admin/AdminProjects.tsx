@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, FolderKanban, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, FolderKanban, CheckCircle2, Play } from "lucide-react";
 import { Project, ProjectTask } from "@/types/crm";
+import { useNavigate } from "react-router-dom";
 
 interface AdminProjectsProps {
   clientId: string;
@@ -22,6 +23,7 @@ interface AdminProjectsProps {
 }
 
 export const AdminProjects = ({ clientId, projects, onUpdate }: AdminProjectsProps) => {
+  const navigate = useNavigate();
   const [newProject, setNewProject] = useState<Partial<Project>>({
     naziv: "",
     status: "planirano",
@@ -253,6 +255,23 @@ export const AdminProjects = ({ clientId, projects, onUpdate }: AdminProjectsPro
                             <p className="text-xs text-muted-foreground">Rok: {task.rok}</p>
                           )}
                         </div>
+                        <Button
+                          onClick={() => {
+                            // Store the task info in localStorage for the focus timer
+                            localStorage.setItem("focus-timer-task", JSON.stringify({
+                              projectId: project.id,
+                              projectName: project.naziv,
+                              taskId: task.id,
+                              taskName: task.naziv,
+                            }));
+                            navigate("/focus-timer");
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          title="Pokreni Fokus Timer"
+                        >
+                          <Play className="h-4 w-4 text-primary" />
+                        </Button>
                         <Button
                           onClick={() => deleteTask(project.id, task.id)}
                           variant="ghost"

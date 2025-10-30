@@ -9,6 +9,7 @@ import RevenueChart from "@/components/crm/RevenueChart";
 import TodaysTasks from "@/components/crm/TodaysTasks";
 import ClientsFollowUp from "@/components/crm/ClientsFollowUp";
 import { SubscriptionsDueWidget } from "@/components/crm/SubscriptionsDueWidget";
+import { GoalsProgressWidget } from "@/components/crm/GoalsProgressWidget";
 import type { Client, Deal, Invoice, Task, Subscription } from "@/types/crm";
 
 const CRMDashboard = () => {
@@ -118,6 +119,11 @@ const CRMDashboard = () => {
         {/* Subscriptions Due Widget */}
         <div className="mb-8">
           <SubscriptionsDueWidget subscriptions={subscriptions} />
+        </div>
+
+        {/* Goals Progress Widget */}
+        <div className="mb-8">
+          <GoalsProgressWidget totalRevenue={totalRevenue} />
         </div>
 
         {/* Tasks and Follow-ups Row */}

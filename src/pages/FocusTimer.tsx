@@ -22,11 +22,38 @@ const FocusTimer = () => {
   const [mode, setMode] = useState<TimerMode>("fokus");
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATIONS.fokus);
   const [isRunning, setIsRunning] = useState(false);
+  const [taskInfo, setTaskInfo] = useState<{
+    projectName: string;
+    taskName: string;
+    projectId: string;
+    taskId: string;
+  } | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
   const { toast } = useToast();
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Check if there's a task from CRM
+    const storedTask = localStorage.getItem("focus-timer-task");
+    if (storedTask) {
+      try {
+        const parsed = JSON.parse(storedTask);
+        setTaskInfo(parsed);
+        toast({
+          title: "Zadatak učitan",
+          description: `${parsed.projectName}: ${parsed.taskName}`,
+        });
+      } catch (error) {
+        console.error("Error parsing task:", error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (isRunning && timeLeft > 0) {
+      if (!startTime) {
+        setStartTime(Date.now());
+      }
       intervalRef.current = window.setInterval(() => {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
@@ -43,10 +70,25 @@ const FocusTimer = () => {
 
   const handleTimerComplete = () => {
     setIsRunning(false);
-    toast({
-      title: "Tajmer završen!",
-      description: `${TIMER_LABELS[mode]} je završen.`,
-    });
+    
+    // Record time spent if this was a CRM task
+    if (taskInfo && startTime) {
+      const timeSpentMinutes = Math.floor((Date.now() - startTime) / 60000);
+      // This would ideally update the project's time tracking
+      // For now, just clear the task info
+      toast({
+        title: "Tajmer završen!",
+        description: `${TIMER_LABELS[mode]} je završen. Vrijeme: ${timeSpentMinutes} min`,
+      });
+      localStorage.removeItem("focus-timer-task");
+      setTaskInfo(null);
+      setStartTime(null);
+    } else {
+      toast({
+        title: "Tajmer završen!",
+        description: `${TIMER_LABELS[mode]} je završen.`,
+      });
+    }
 
     // Auto-switch to next mode
     const nextMode: TimerMode = mode === "fokus" ? "kratka" : "fokus";
@@ -81,6 +123,18 @@ const FocusTimer = () => {
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 container mx-auto px-6 py-8 max-w-[800px]">
         <h1 className="text-4xl font-bold mb-8 text-center">Fokus Timer</h1>
+
+        {taskInfo && (
+          <Card className="mb-6 border-primary/50">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-1">Radite na:</p>
+                <h2 className="text-xl font-semibold">{taskInfo.projectName}</h2>
+                <p className="text-muted-foreground">{taskInfo.taskName}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="mb-6">
           <CardHeader>
