@@ -12,9 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { storage } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, FileText, CheckSquare, Briefcase, User, StickyNote, Trash2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, FileText, CheckSquare, Briefcase, User, StickyNote, Trash2, MessageSquare, FileCheck, FolderKanban, RefreshCw, Lock, LifeBuoy } from "lucide-react";
 import CommunicationLog from "@/components/crm/CommunicationLog";
-import type { Client, Invoice, Task, Deal, CommunicationEntry } from "@/types/crm";
+import { AdminProposals } from "@/components/admin/AdminProposals";
+import { AdminProjects } from "@/components/admin/AdminProjects";
+import { AdminSubscriptions } from "@/components/admin/AdminSubscriptions";
+import { AdminVault } from "@/components/admin/AdminVault";
+import { AdminSupportTickets } from "@/components/admin/AdminSupportTickets";
+import type { Client, Invoice, Task, Deal, CommunicationEntry, Proposal, Project, Subscription, VaultEntry, SupportTicket } from "@/types/crm";
 
 const ClientDetailNew = () => {
   const { clientId } = useParams();
@@ -24,6 +29,11 @@ const ClientDetailNew = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [communications, setCommunications] = useState<CommunicationEntry[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [openInvoiceDialog, setOpenInvoiceDialog] = useState(false);
   const [openTaskDialog, setOpenTaskDialog] = useState(false);
@@ -62,6 +72,21 @@ const ClientDetailNew = () => {
 
         const allComms = await storage.getJSON<CommunicationEntry[]>("crm-communications") || [];
         setCommunications(allComms.filter((c) => c.clientId === clientId));
+
+        const allProposals = await storage.getJSON<Proposal[]>("crm-proposals") || [];
+        setProposals(allProposals.filter((p) => p.clientId === clientId));
+
+        const allProjects = await storage.getJSON<Project[]>("crm-projects") || [];
+        setProjects(allProjects.filter((p) => p.clientId === clientId));
+
+        const allSubscriptions = await storage.getJSON<Subscription[]>("crm-subscriptions") || [];
+        setSubscriptions(allSubscriptions.filter((s) => s.clientId === clientId));
+
+        const allVault = await storage.getJSON<VaultEntry[]>("crm-vault") || [];
+        setVaultEntries(allVault.filter((v) => v.clientId === clientId));
+
+        const allTickets = await storage.getJSON<SupportTicket[]>("crm-tickets") || [];
+        setTickets(allTickets.filter((t) => t.clientId === clientId));
       } catch (error) {
         console.error("Error loading data:", error);
       }
@@ -262,6 +287,26 @@ const ClientDetailNew = () => {
             <TabsTrigger value="communications" className="gap-2">
               <MessageSquare className="w-4 h-4" />
               Dnevnik Komunikacije
+            </TabsTrigger>
+            <TabsTrigger value="proposals" className="gap-2">
+              <FileCheck className="w-4 h-4" />
+              Ponude
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="gap-2">
+              <FolderKanban className="w-4 h-4" />
+              Projekti
+            </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Pretplate
+            </TabsTrigger>
+            <TabsTrigger value="vault" className="gap-2">
+              <Lock className="w-4 h-4" />
+              Trezor
+            </TabsTrigger>
+            <TabsTrigger value="tickets" className="gap-2">
+              <LifeBuoy className="w-4 h-4" />
+              Tiketi
             </TabsTrigger>
           </TabsList>
 
@@ -503,6 +548,92 @@ const ClientDetailNew = () => {
               clientId={clientId!}
               entries={communications}
               onAddEntry={addCommunication}
+            />
+          </TabsContent>
+
+          {/* Proposals Tab */}
+          <TabsContent value="proposals" className="animate-fade-in">
+            <AdminProposals
+              clientId={clientId!}
+              proposals={proposals}
+              onUpdate={async (updatedProposals) => {
+                setProposals(updatedProposals);
+                await storage.setJSON("crm-proposals", [
+                  ...await storage.getJSON<Proposal[]>("crm-proposals").then(all => 
+                    all?.filter(p => p.clientId !== clientId) || []
+                  ),
+                  ...updatedProposals
+                ]);
+              }}
+              deals={deals}
+            />
+          </TabsContent>
+
+          {/* Projects Tab */}
+          <TabsContent value="projects" className="animate-fade-in">
+            <AdminProjects
+              clientId={clientId!}
+              projects={projects}
+              onUpdate={async (updatedProjects) => {
+                setProjects(updatedProjects);
+                await storage.setJSON("crm-projects", [
+                  ...await storage.getJSON<Project[]>("crm-projects").then(all => 
+                    all?.filter(p => p.clientId !== clientId) || []
+                  ),
+                  ...updatedProjects
+                ]);
+              }}
+            />
+          </TabsContent>
+
+          {/* Subscriptions Tab */}
+          <TabsContent value="subscriptions" className="animate-fade-in">
+            <AdminSubscriptions
+              clientId={clientId!}
+              subscriptions={subscriptions}
+              onUpdate={async (updatedSubscriptions) => {
+                setSubscriptions(updatedSubscriptions);
+                await storage.setJSON("crm-subscriptions", [
+                  ...await storage.getJSON<Subscription[]>("crm-subscriptions").then(all => 
+                    all?.filter(s => s.clientId !== clientId) || []
+                  ),
+                  ...updatedSubscriptions
+                ]);
+              }}
+            />
+          </TabsContent>
+
+          {/* Vault Tab */}
+          <TabsContent value="vault" className="animate-fade-in">
+            <AdminVault
+              clientId={clientId!}
+              vaultEntries={vaultEntries}
+              onUpdate={async (updatedEntries) => {
+                setVaultEntries(updatedEntries);
+                await storage.setJSON("crm-vault", [
+                  ...await storage.getJSON<VaultEntry[]>("crm-vault").then(all => 
+                    all?.filter(v => v.clientId !== clientId) || []
+                  ),
+                  ...updatedEntries
+                ]);
+              }}
+            />
+          </TabsContent>
+
+          {/* Support Tickets Tab */}
+          <TabsContent value="tickets" className="animate-fade-in">
+            <AdminSupportTickets
+              clientId={clientId!}
+              tickets={tickets}
+              onUpdate={async (updatedTickets) => {
+                setTickets(updatedTickets);
+                await storage.setJSON("crm-tickets", [
+                  ...await storage.getJSON<SupportTicket[]>("crm-tickets").then(all => 
+                    all?.filter(t => t.clientId !== clientId) || []
+                  ),
+                  ...updatedTickets
+                ]);
+              }}
             />
           </TabsContent>
         </Tabs>

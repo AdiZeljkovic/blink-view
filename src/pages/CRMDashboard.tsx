@@ -8,7 +8,8 @@ import SalesFunnel from "@/components/crm/SalesFunnel";
 import RevenueChart from "@/components/crm/RevenueChart";
 import TodaysTasks from "@/components/crm/TodaysTasks";
 import ClientsFollowUp from "@/components/crm/ClientsFollowUp";
-import type { Client, Deal, Invoice, Task } from "@/types/crm";
+import { SubscriptionsDueWidget } from "@/components/crm/SubscriptionsDueWidget";
+import type { Client, Deal, Invoice, Task, Subscription } from "@/types/crm";
 
 const CRMDashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const CRMDashboard = () => {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -24,11 +26,13 @@ const CRMDashboard = () => {
         const savedDeals = await storage.getJSON<Deal[]>("crm-deals") || [];
         const savedInvoices = await storage.getJSON<Invoice[]>("crm-invoices") || [];
         const savedTasks = await storage.getJSON<Task[]>("crm-tasks") || [];
+        const savedSubscriptions = await storage.getJSON<Subscription[]>("crm-subscriptions") || [];
 
         setClients(savedClients);
         setDeals(savedDeals);
         setInvoices(savedInvoices);
         setTasks(savedTasks);
+        setSubscriptions(savedSubscriptions);
       } catch (error) {
         console.error("Error loading CRM data:", error);
       }
@@ -109,6 +113,11 @@ const CRMDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <SalesFunnel deals={deals} />
           <RevenueChart invoices={invoices} />
+        </div>
+
+        {/* Subscriptions Due Widget */}
+        <div className="mb-8">
+          <SubscriptionsDueWidget subscriptions={subscriptions} />
         </div>
 
         {/* Tasks and Follow-ups Row */}
