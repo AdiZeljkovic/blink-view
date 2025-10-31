@@ -6,15 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, User, Mail, Phone, Building2, Briefcase, GripVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Client, Deal } from "@/types/crm";
 
 const CRMNew = () => {
+  const { supabase, isConfigured } = useSupabase();
   const [clients, setClients] = useState<Client[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [openClientDialog, setOpenClientDialog] = useState(false);
   const [openDealDialog, setOpenDealDialog] = useState(false);
   const [clientFormData, setClientFormData] = useState<Omit<Client, "id">>({
@@ -35,46 +37,41 @@ const CRMNew = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      if (!supabase || !isConfigured) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const savedClients = await storage.getJSON<Client[]>("crm-clients");
-        if (savedClients) setClients(savedClients);
-        
-        const savedDeals = await storage.getJSON<Deal[]>("crm-deals");
-        if (savedDeals) setDeals(savedDeals);
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (clientsError) throw clientsError;
+        setClients(clientsData || []);
+
+        const { data: dealsData, error: dealsError } = await supabase
+          .from('deals')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (dealsError) throw dealsError;
+        setDeals(dealsData || []);
       } catch (error) {
         console.error("Error loading CRM data:", error);
+        toast({
+          title: "Greška",
+          description: "Nije moguće učitati podatke",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
     loadData();
-  }, []);
+  }, [supabase, isConfigured, toast]);
 
-  const saveClients = async (newClients: Client[]) => {
-    setClients(newClients);
-    try {
-      await storage.setJSON("crm-clients", newClients);
-    } catch (error) {
-      console.error("Error saving clients:", error);
-      toast({
-        title: "Greška",
-        description: "Nije moguće sačuvati klijenta",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const saveDeals = async (newDeals: Deal[]) => {
-    setDeals(newDeals);
-    try {
-      await storage.setJSON("crm-deals", newDeals);
-    } catch (error) {
-      console.error("Error saving deals:", error);
-      toast({
-        title: "Greška",
-        description: "Nije moguće sačuvati posao",
-        variant: "destructive",
-      });
-    }
-  };
 
   const addClient = async () => {
     if (!clientFormData.ime || !clientFormData.email) {
@@ -86,25 +83,46 @@ const CRMNew = () => {
       return;
     }
 
-    const newClient: Client = {
-      id: Date.now().toString(),
-      ...clientFormData,
-    };
+    if (!supabase) {
+      toast({
+        title: "Greška",
+        description: "Supabase nije konfigurisan",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    await saveClients([...clients, newClient]);
-    setClientFormData({
-      ime: "",
-      kompanija: "",
-      email: "",
-      telefon: "",
-      adresa: "",
-      biljeske: "",
-    });
-    setOpenClientDialog(false);
-    toast({
-      title: "Uspjeh",
-      description: "Klijent je dodan",
-    });
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([clientFormData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setClients([data, ...clients]);
+      setClientFormData({
+        ime: "",
+        kompanija: "",
+        email: "",
+        telefon: "",
+        adresa: "",
+        biljeske: "",
+      });
+      setOpenClientDialog(false);
+      toast({
+        title: "Uspjeh",
+        description: "Klijent je dodan",
+      });
+    } catch (error) {
+      console.error("Error adding client:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće dodati klijenta",
+        variant: "destructive",
+      });
+    }
   };
 
   const addDeal = async () => {
@@ -117,30 +135,70 @@ const CRMNew = () => {
       return;
     }
 
-    const newDeal: Deal = {
-      id: Date.now().toString(),
-      clientId: dealFormData.clientId,
-      naziv: dealFormData.naziv,
-      vrijednost: parseFloat(dealFormData.vrijednost),
-      status: "novi",
-    };
+    if (!supabase) {
+      toast({
+        title: "Greška",
+        description: "Supabase nije konfigurisan",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    await saveDeals([...deals, newDeal]);
-    setDealFormData({
-      clientId: "",
-      naziv: "",
-      vrijednost: "",
-    });
-    setOpenDealDialog(false);
-    toast({
-      title: "Uspjeh",
-      description: "Posao je dodan",
-    });
+    try {
+      const { data, error } = await supabase
+        .from('deals')
+        .insert([{
+          client_id: dealFormData.clientId,
+          naziv: dealFormData.naziv,
+          vrijednost: parseFloat(dealFormData.vrijednost),
+          status: "novi",
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setDeals([data, ...deals]);
+      setDealFormData({
+        clientId: "",
+        naziv: "",
+        vrijednost: "",
+      });
+      setOpenDealDialog(false);
+      toast({
+        title: "Uspjeh",
+        description: "Posao je dodan",
+      });
+    } catch (error) {
+      console.error("Error adding deal:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće dodati posao",
+        variant: "destructive",
+      });
+    }
   };
 
   const moveDeal = async (dealId: string, newStatus: Deal["status"]) => {
-    const updated = deals.map(d => d.id === dealId ? { ...d, status: newStatus } : d);
-    await saveDeals(updated);
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from('deals')
+        .update({ status: newStatus })
+        .eq('id', dealId);
+
+      if (error) throw error;
+
+      setDeals(deals.map(d => d.id === dealId ? { ...d, status: newStatus } : d));
+    } catch (error) {
+      console.error("Error moving deal:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće ažurirati posao",
+        variant: "destructive",
+      });
+    }
   };
 
   const getDealsByStatus = (status: Deal["status"]) => {
