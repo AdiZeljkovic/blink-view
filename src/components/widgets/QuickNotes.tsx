@@ -2,50 +2,58 @@ import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
-import { toast } from "sonner";
-import { storage } from "@/lib/storage";
-
-interface Note {
-  id: string;
-  content: string;
-  createdAt: string;
-}
+import { useSupabase } from "@/hooks/useSupabase";
+import { useToast } from "@/hooks/use-toast";
 
 const QuickNotes = () => {
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
   const [note, setNote] = useState("");
 
   const handleSave = async () => {
     if (!note.trim()) {
-      toast.error("Bilješka ne može biti prazna");
+      toast({
+        title: "Upozorenje",
+        description: "Bilješka ne može biti prazna",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!supabase) {
+      toast({
+        title: "Greška",
+        description: "Supabase nije konfigurisan",
+        variant: "destructive",
+      });
       return;
     }
     
     try {
-      // Get existing notes
-      const notes: Note[] = await storage.getJSON<Note[]>("quick-notes-list") || [];
+      const { error } = await supabase
+        .from("notes")
+        .insert([{
+          content: note,
+          createdAt: new Date().toISOString()
+        }]);
+
+      if (error) throw error;
       
-      // Add new note
-      const newNote: Note = {
-        id: Date.now().toString(),
-        content: note,
-        createdAt: new Date().toISOString()
-      };
-      
-      notes.unshift(newNote); // Add to beginning
-      
-      // Save to storage
-      await storage.setJSON("quick-notes-list", notes);
-      
-      // Clear the textarea
       setNote("");
-      
-      toast.success("Bilješka sačuvana");
+      toast({
+        title: "Uspjeh",
+        description: "Bilješka sačuvana",
+      });
       
       // Dispatch custom event to notify NotesList widget
       window.dispatchEvent(new Event("notesUpdated"));
     } catch (error) {
       console.error("Failed to save note:", error);
-      toast.error("Greška pri čuvanju bilješke. Provjerite Supabase vezu.");
+      toast({
+        title: "Greška",
+        description: "Greška pri čuvanju bilješke",
+        variant: "destructive",
+      });
     }
   };
 

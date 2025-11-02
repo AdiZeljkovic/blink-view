@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { CheckSquare, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -12,61 +12,132 @@ interface Task {
 }
 
 const TaskList = () => {
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskText, setNewTaskText] = useState("");
 
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        const savedTasks = await storage.getJSON<Task[]>("task-list");
-        if (savedTasks) {
-          setTasks(savedTasks);
-        }
-      } catch (error) {
-        console.error("Failed to load tasks:", error);
-        toast.error("Greška pri učitavanju zadataka");
-      }
-    };
-    loadTasks();
-  }, []);
+    if (supabase) {
+      loadTasks();
+    }
+  }, [supabase]);
 
-  const saveTasks = async (updatedTasks: Task[]) => {
+  const loadTasks = async () => {
+    if (!supabase) return;
+
     try {
-      setTasks(updatedTasks);
-      await storage.setJSON("task-list", updatedTasks);
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .is("clientId", null)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setTasks((data || []).map((t: any) => ({
+        id: t.id,
+        text: t.naziv,
+        completed: t.completed
+      })));
     } catch (error) {
-      console.error("Failed to save tasks:", error);
-      toast.error("Greška pri čuvanju zadataka. Provjerite Supabase vezu.");
+      console.error("Failed to load tasks:", error);
     }
   };
 
-  const toggleTask = (id: string) => {
-    const updated = tasks.map((task) =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
-    saveTasks(updated);
+  const toggleTask = async (id: string) => {
+    if (!supabase) return;
+
+    try {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      const { error } = await supabase
+        .from("tasks")
+        .update({ completed: !task.completed })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      const updated = tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      );
+      setTasks(updated);
+    } catch (error) {
+      console.error("Failed to update task:", error);
+      toast({
+        title: "Greška",
+        description: "Greška pri ažuriranju zadatka",
+        variant: "destructive",
+      });
+    }
   };
 
-  const addTask = () => {
+  const addTask = async () => {
     if (!newTaskText.trim()) {
-      toast.error("Unesite tekst zadatka");
+      toast({
+        title: "Upozorenje",
+        description: "Unesite tekst zadatka",
+        variant: "destructive",
+      });
       return;
     }
 
-    const newTask: Task = {
-      id: Date.now().toString(),
-      text: newTaskText,
-      completed: false
-    };
+    if (!supabase) return;
 
-    saveTasks([...tasks, newTask]);
-    setNewTaskText("");
-    toast.success("Zadatak dodan");
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert([{
+          naziv: newTaskText,
+          rok: new Date().toISOString().split("T")[0],
+          completed: false
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTasks([{ id: data.id, text: data.naziv, completed: data.completed }, ...tasks]);
+      setNewTaskText("");
+      toast({
+        title: "Uspjeh",
+        description: "Zadatak dodan",
+      });
+    } catch (error) {
+      console.error("Failed to add task:", error);
+      toast({
+        title: "Greška",
+        description: "Greška pri dodavanju zadatka",
+        variant: "destructive",
+      });
+    }
   };
 
-  const deleteTask = (id: string) => {
-    saveTasks(tasks.filter(t => t.id !== id));
-    toast.success("Zadatak obrisan");
+  const deleteTask = async (id: string) => {
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setTasks(tasks.filter(t => t.id !== id));
+      toast({
+        title: "Uspjeh",
+        description: "Zadatak obrisan",
+      });
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      toast({
+        title: "Greška",
+        description: "Greška pri brisanju zadatka",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

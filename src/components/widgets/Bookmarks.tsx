@@ -1,9 +1,12 @@
 import { Bookmark, ExternalLink, Star } from "lucide-react";
 import { useState, useEffect } from "react";
-import { storage } from "@/lib/storage";
-import { toast } from "sonner";
+import { useSupabase } from "@/hooks/useSupabase";
+import { useToast } from "@/hooks/use-toast";
 
 const Bookmarks = () => {
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
+  
   const defaultBookmarks = [
     { name: "GitHub", url: "https://github.com", color: "from-purple-500/20 to-purple-600/20", icon: "💻" },
     { name: "YouTube", url: "https://youtube.com", color: "from-red-500/20 to-red-600/20", icon: "📺" },
@@ -15,23 +18,34 @@ const Bookmarks = () => {
   const [bookmarks, setBookmarks] = useState(defaultBookmarks);
 
   useEffect(() => {
-    const loadBookmarks = async () => {
-      try {
-        const saved = await storage.getJSON<any[]>("widget-bookmarks");
-        if (saved && saved.length > 0) {
-          setBookmarks(saved.map((b: any, i: number) => ({
-            ...b,
-            color: defaultBookmarks[i % defaultBookmarks.length].color,
-            icon: defaultBookmarks[i % defaultBookmarks.length].icon
-          })));
-        }
-      } catch (error) {
-        console.error("Error loading bookmarks:", error);
-        toast.error("Greška pri učitavanju bookmarks");
+    if (supabase) {
+      loadBookmarks();
+    }
+  }, [supabase]);
+
+  const loadBookmarks = async () => {
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setBookmarks(data.map((b: any, i: number) => ({
+          name: b.name,
+          url: b.url,
+          color: defaultBookmarks[i % defaultBookmarks.length].color,
+          icon: defaultBookmarks[i % defaultBookmarks.length].icon
+        })));
       }
-    };
-    loadBookmarks();
-  }, []);
+    } catch (error) {
+      console.error("Error loading bookmarks:", error);
+    }
+  };
 
   return (
     <div className="widget-card">

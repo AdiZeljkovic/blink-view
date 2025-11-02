@@ -1,8 +1,8 @@
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { storage } from "@/lib/storage";
-import { toast } from "sonner";
+import { useSupabase } from "@/hooks/useSupabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface CalendarEvent {
   id: string;
@@ -14,29 +14,37 @@ interface CalendarEvent {
 }
 
 const Calendar = () => {
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   useEffect(() => {
-    const loadEvents = async () => {
-      try {
-        const savedEvents = await storage.getJSON<CalendarEvent[]>("calendar-events");
-        if (savedEvents) {
-          setEvents(savedEvents);
-        }
-      } catch (error) {
-        console.error("Error loading calendar events:", error);
-        toast.error("Greška pri učitavanju događaja");
-      }
-    };
-    
-    // Load events initially
-    loadEvents();
-    
-    // Poll for updates every 5 seconds
-    const interval = setInterval(loadEvents, 5000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    if (supabase) {
+      loadEvents();
+      
+      // Poll for updates every 5 seconds
+      const interval = setInterval(loadEvents, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [supabase]);
+
+  const loadEvents = async () => {
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("calendar_events")
+        .select("*")
+        .order("date", { ascending: true })
+        .order("time", { ascending: true });
+
+      if (error) throw error;
+
+      setEvents(data || []);
+    } catch (error) {
+      console.error("Error loading calendar events:", error);
+    }
+  };
 
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");

@@ -1,8 +1,8 @@
-import { Server, Database, Network, HardDrive, Cloud, Globe, Shield, Container } from "lucide-react";
+import { Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
-import { storage } from "@/lib/storage";
-import { toast } from "sonner";
+import { useSupabase } from "@/hooks/useSupabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface HomelabApp {
   name: string;
@@ -16,6 +16,9 @@ interface AppStatus {
 }
 
 const HomelabApps = () => {
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
+  
   const defaultApps: HomelabApp[] = [
     { name: "Proxmox", icon: "Server", url: "#", healthCheck: "" },
     { name: "TrueNAS", icon: "Database", url: "#", healthCheck: "" },
@@ -31,25 +34,40 @@ const HomelabApps = () => {
   const [statuses, setStatuses] = useState<AppStatus>({});
 
   useEffect(() => {
-    const loadApps = async () => {
-      try {
-        const saved = await storage.getJSON<HomelabApp[]>("homelab-apps");
-        if (saved && saved.length > 0) {
-          setApps(saved);
-        }
-      } catch (error) {
-        console.error("Error loading homelab apps:", error);
-        toast.error("Greška pri učitavanju aplikacija");
-      }
-    };
-    loadApps();
-  }, []);
+    if (supabase) {
+      loadApps();
+    }
+  }, [supabase]);
 
   useEffect(() => {
     checkHealth();
-    const interval = setInterval(checkHealth, 60000); // Check every 60 seconds
+    const interval = setInterval(checkHealth, 60000);
     return () => clearInterval(interval);
   }, [apps]);
+
+  const loadApps = async () => {
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("homelab_apps")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setApps(data.map((app: any) => ({
+          name: app.name,
+          url: app.url,
+          icon: app.icon,
+          healthCheck: app.health_check || ""
+        })));
+      }
+    } catch (error) {
+      console.error("Error loading homelab apps:", error);
+    }
+  };
 
   const checkHealth = async () => {
     const newStatuses: AppStatus = {};

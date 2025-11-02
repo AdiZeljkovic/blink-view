@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { addWeeks, addMonths, subWeeks, subMonths } from "date-fns";
@@ -22,6 +22,8 @@ interface Transaction {
 }
 
 const Finance = () => {
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [opis, setOpis] = useState("");
   const [iznos, setIznos] = useState("");
@@ -29,36 +31,41 @@ const Finance = () => {
   const [datum, setDatum] = useState(new Date().toISOString().split("T")[0]);
   const [period, setPeriod] = useState<"week" | "month">("month");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadTransactions = async () => {
-      try {
-        const saved = await storage.getJSON<Transaction[]>("finance-transactions");
-        if (saved) setTransactions(saved);
-      } catch (error) {
-        console.error("Error loading transactions:", error);
-      }
-    };
-    loadTransactions();
-  }, []);
+    if (supabase) {
+      loadTransactions();
+    }
+  }, [supabase]);
 
-  const saveTransactions = async (newTransactions: Transaction[]) => {
-    setTransactions(newTransactions);
+  const loadTransactions = async () => {
+    if (!supabase) return;
+
     try {
-      await storage.setJSON("finance-transactions", newTransactions);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .order("datum", { ascending: false });
+
+      if (error) throw error;
+
+      setTransactions(data || []);
     } catch (error) {
-      console.error("Error saving transactions:", error);
+      console.error("Error loading transactions:", error);
       toast({
         title: "Greška",
-        description: "Nije moguće sačuvati transakciju",
+        description: "Nije moguće učitati transakcije",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const addTransaction = async () => {
-    if (!opis || !iznos) {
+    if (!opis || !iznos || !supabase) {
       toast({
         title: "Upozorenje",
         description: "Popunite sva polja",
@@ -67,30 +74,64 @@ const Finance = () => {
       return;
     }
 
-    const newTransaction: Transaction = {
-      id: Date.now().toString(),
+    const newTransaction = {
       opis,
       iznos: parseFloat(iznos),
       tip,
       datum,
     };
 
-    await saveTransactions([newTransaction, ...transactions]);
-    setOpis("");
-    setIznos("");
-    setDatum(new Date().toISOString().split("T")[0]);
-    toast({
-      title: "Uspjeh",
-      description: "Transakcija je dodana",
-    });
+    try {
+      const { data, error } = await supabase
+        .from("transactions")
+        .insert([newTransaction])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTransactions([data, ...transactions]);
+      setOpis("");
+      setIznos("");
+      setDatum(new Date().toISOString().split("T")[0]);
+      toast({
+        title: "Uspjeh",
+        description: "Transakcija je dodana",
+      });
+    } catch (error) {
+      console.error("Error adding transaction:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće dodati transakciju",
+        variant: "destructive",
+      });
+    }
   };
 
   const deleteTransaction = async (id: string) => {
-    await saveTransactions(transactions.filter((t) => t.id !== id));
-    toast({
-      title: "Uspjeh",
-      description: "Transakcija je obrisana",
-    });
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setTransactions(transactions.filter((t) => t.id !== id));
+      toast({
+        title: "Uspjeh",
+        description: "Transakcija je obrisana",
+      });
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće obrisati transakciju",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleNavigate = (direction: "prev" | "next") => {
@@ -103,7 +144,6 @@ const Finance = () => {
     });
   };
 
-  // Filter transactions by selected period
   const filteredTransactions = filterTransactionsByPeriod(transactions, period, currentDate);
 
   const totalPrihod = filteredTransactions
@@ -113,6 +153,14 @@ const Finance = () => {
     .filter((t) => t.tip === "rashod")
     .reduce((sum, t) => sum + t.iznos, 0);
   const balans = totalPrihod - totalRashod;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Učitavanje...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
