@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { storage } from "@/lib/storage";
 import { useNavigate } from "react-router-dom";
 import { LayoutDashboard, Users, DollarSign, TrendingUp, Briefcase } from "lucide-react";
+import { useSupabase } from "@/hooks/useSupabase";
+import { useToast } from "@/hooks/use-toast";
 import SalesFunnel from "@/components/crm/SalesFunnel";
 import RevenueChart from "@/components/crm/RevenueChart";
 import TodaysTasks from "@/components/crm/TodaysTasks";
@@ -14,32 +15,57 @@ import type { Client, Deal, Invoice, Task, Subscription } from "@/types/crm";
 
 const CRMDashboard = () => {
   const navigate = useNavigate();
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const savedClients = await storage.getJSON<Client[]>("crm-clients") || [];
-        const savedDeals = await storage.getJSON<Deal[]>("crm-deals") || [];
-        const savedInvoices = await storage.getJSON<Invoice[]>("crm-invoices") || [];
-        const savedTasks = await storage.getJSON<Task[]>("crm-tasks") || [];
-        const savedSubscriptions = await storage.getJSON<Subscription[]>("crm-subscriptions") || [];
+    if (supabase) {
+      loadData();
+    }
+  }, [supabase]);
 
-        setClients(savedClients);
-        setDeals(savedDeals);
-        setInvoices(savedInvoices);
-        setTasks(savedTasks);
-        setSubscriptions(savedSubscriptions);
-      } catch (error) {
-        console.error("Error loading CRM data:", error);
-      }
-    };
-    loadData();
-  }, []);
+  const loadData = async () => {
+    if (!supabase) return;
+
+    try {
+      setLoading(true);
+      
+      const [clientsRes, dealsRes, invoicesRes, tasksRes, subscriptionsRes] = await Promise.all([
+        supabase.from("clients").select("*"),
+        supabase.from("deals").select("*"),
+        supabase.from("invoices").select("*"),
+        supabase.from("tasks").select("*"),
+        supabase.from("subscriptions").select("*"),
+      ]);
+
+      if (clientsRes.error) throw clientsRes.error;
+      if (dealsRes.error) throw dealsRes.error;
+      if (invoicesRes.error) throw invoicesRes.error;
+      if (tasksRes.error) throw tasksRes.error;
+      if (subscriptionsRes.error) throw subscriptionsRes.error;
+
+      setClients(clientsRes.data || []);
+      setDeals(dealsRes.data || []);
+      setInvoices(invoicesRes.data || []);
+      setTasks(tasksRes.data || []);
+      setSubscriptions(subscriptionsRes.data || []);
+    } catch (error) {
+      console.error("Error loading CRM data:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće učitati CRM podatke",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const totalRevenue = invoices
     .filter(inv => inv.status === "placeno")
@@ -49,6 +75,14 @@ const CRMDashboard = () => {
   const pipelineValue = deals
     .filter(d => d.status !== "izgubljeno")
     .reduce((sum, d) => sum + d.vrijednost, 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Učitavanje...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

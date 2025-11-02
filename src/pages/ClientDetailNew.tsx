@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, FileText, CheckSquare, Briefcase, User, StickyNote, Trash2, MessageSquare, FileCheck, FolderKanban, RefreshCw, Lock, LifeBuoy } from "lucide-react";
 import CommunicationLog from "@/components/crm/CommunicationLog";
@@ -24,6 +24,9 @@ import type { Client, Invoice, Task, Deal, CommunicationEntry, Proposal, Project
 const ClientDetailNew = () => {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
+  
   const [client, setClient] = useState<Client | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -34,6 +37,7 @@ const ClientDetailNew = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [openInvoiceDialog, setOpenInvoiceDialog] = useState(false);
   const [openTaskDialog, setOpenTaskDialog] = useState(false);
@@ -48,73 +52,117 @@ const ClientDetailNew = () => {
     naziv: "",
     rok: new Date().toISOString().split("T")[0],
   });
-  const { toast } = useToast();
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const clients = await storage.getJSON<Client[]>("crm-clients");
-        const foundClient = clients?.find((c) => c.id === clientId);
-        if (foundClient) {
-          setClient(foundClient);
-        } else {
-          navigate("/crm");
-        }
+    if (supabase && clientId) {
+      loadData();
+    }
+  }, [supabase, clientId]);
 
-        const allInvoices = await storage.getJSON<Invoice[]>("crm-invoices") || [];
-        setInvoices(allInvoices.filter((inv) => inv.clientId === clientId));
+  const loadData = async () => {
+    if (!supabase || !clientId) return;
 
-        const allTasks = await storage.getJSON<Task[]>("crm-tasks") || [];
-        setTasks(allTasks.filter((t) => t.clientId === clientId));
+    try {
+      setLoading(true);
 
-        const allDeals = await storage.getJSON<Deal[]>("crm-deals") || [];
-        setDeals(allDeals.filter((d) => d.clientId === clientId));
+      const { data: foundClient, error: clientError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", clientId)
+        .single();
 
-        const allComms = await storage.getJSON<CommunicationEntry[]>("crm-communications") || [];
-        setCommunications(allComms.filter((c) => c.clientId === clientId));
-
-        const allProposals = await storage.getJSON<Proposal[]>("crm-proposals") || [];
-        setProposals(allProposals.filter((p) => p.clientId === clientId));
-
-        const allProjects = await storage.getJSON<Project[]>("crm-projects") || [];
-        setProjects(allProjects.filter((p) => p.clientId === clientId));
-
-        const allSubscriptions = await storage.getJSON<Subscription[]>("crm-subscriptions") || [];
-        setSubscriptions(allSubscriptions.filter((s) => s.clientId === clientId));
-
-        const allVault = await storage.getJSON<VaultEntry[]>("crm-vault") || [];
-        setVaultEntries(allVault.filter((v) => v.clientId === clientId));
-
-        const allTickets = await storage.getJSON<SupportTicket[]>("crm-tickets") || [];
-        setTickets(allTickets.filter((t) => t.clientId === clientId));
-      } catch (error) {
-        console.error("Error loading data:", error);
+      if (clientError || !foundClient) {
+        toast({
+          title: "Greška",
+          description: "Klijent nije pronađen",
+          variant: "destructive",
+        });
+        navigate("/crm");
+        return;
       }
-    };
-    loadData();
-  }, [clientId, navigate]);
+
+      setClient(foundClient);
+
+      const [
+        invoicesRes,
+        tasksRes,
+        dealsRes,
+        communicationsRes,
+        proposalsRes,
+        projectsRes,
+        subscriptionsRes,
+        vaultRes,
+        ticketsRes,
+      ] = await Promise.all([
+        supabase.from("invoices").select("*").eq("clientId", clientId),
+        supabase.from("tasks").select("*").eq("clientId", clientId),
+        supabase.from("deals").select("*").eq("clientId", clientId),
+        supabase.from("communication_entries").select("*").eq("clientId", clientId),
+        supabase.from("proposals").select("*").eq("clientId", clientId),
+        supabase.from("projects").select("*").eq("clientId", clientId),
+        supabase.from("subscriptions").select("*").eq("clientId", clientId),
+        supabase.from("vault_entries").select("*").eq("clientId", clientId),
+        supabase.from("support_tickets").select("*").eq("clientId", clientId),
+      ]);
+
+      setInvoices(invoicesRes.data || []);
+      setTasks(tasksRes.data || []);
+      setDeals(dealsRes.data || []);
+      setCommunications(communicationsRes.data || []);
+      setProposals(proposalsRes.data || []);
+      setProjects(projectsRes.data || []);
+      setSubscriptions(subscriptionsRes.data || []);
+      setVaultEntries(vaultRes.data || []);
+      setTickets(ticketsRes.data || []);
+    } catch (error) {
+      console.error("Error loading client data:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće učitati podatke klijenta",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const saveClient = async () => {
-    if (!client) return;
+    if (!client || !supabase) return;
+
     try {
-      const clients = await storage.getJSON<Client[]>("crm-clients") || [];
-      const updated = clients.map((c) => (c.id === client.id ? client : c));
-      await storage.setJSON("crm-clients", updated);
+      const { error } = await supabase
+        .from("clients")
+        .update(client)
+        .eq("id", client.id);
+
+      if (error) throw error;
+
       setEditMode(false);
-      toast({ title: "Uspjeh", description: "Podaci klijenta su ažurirani" });
+      toast({
+        title: "Uspjeh",
+        description: "Podaci klijenta su ažurirani",
+      });
     } catch (error) {
-      toast({ title: "Greška", description: "Nije moguće ažurirati klijenta", variant: "destructive" });
+      console.error("Error saving client:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće ažurirati klijenta",
+        variant: "destructive",
+      });
     }
   };
 
   const addInvoice = async () => {
-    if (!invoiceFormData.brojFakture || !invoiceFormData.iznos) {
-      toast({ title: "Upozorenje", description: "Popunite sva polja", variant: "destructive" });
+    if (!invoiceFormData.brojFakture || !invoiceFormData.iznos || !supabase) {
+      toast({
+        title: "Upozorenje",
+        description: "Popunite sva polja",
+        variant: "destructive",
+      });
       return;
     }
 
-    const newInvoice: Invoice = {
-      id: Date.now().toString(),
+    const newInvoice: Omit<Invoice, "id"> = {
       clientId: clientId!,
       brojFakture: invoiceFormData.brojFakture,
       iznos: parseFloat(invoiceFormData.iznos),
@@ -124,10 +172,15 @@ const ClientDetailNew = () => {
     };
 
     try {
-      const allInvoices = await storage.getJSON<Invoice[]>("crm-invoices") || [];
-      const updated = [...allInvoices, newInvoice];
-      await storage.setJSON("crm-invoices", updated);
-      setInvoices([...invoices, newInvoice]);
+      const { data, error } = await supabase
+        .from("invoices")
+        .insert([newInvoice])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setInvoices([...invoices, data]);
       setInvoiceFormData({
         brojFakture: "",
         iznos: "",
@@ -136,20 +189,31 @@ const ClientDetailNew = () => {
         status: "nacrt",
       });
       setOpenInvoiceDialog(false);
-      toast({ title: "Uspjeh", description: "Faktura je dodana" });
+      toast({
+        title: "Uspjeh",
+        description: "Faktura je dodana",
+      });
     } catch (error) {
-      toast({ title: "Greška", description: "Nije moguće dodati fakturu", variant: "destructive" });
+      console.error("Error adding invoice:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće dodati fakturu",
+        variant: "destructive",
+      });
     }
   };
 
   const addTask = async () => {
-    if (!taskFormData.naziv) {
-      toast({ title: "Upozorenje", description: "Unesite naziv zadatka", variant: "destructive" });
+    if (!taskFormData.naziv || !supabase) {
+      toast({
+        title: "Upozorenje",
+        description: "Unesite naziv zadatka",
+        variant: "destructive",
+      });
       return;
     }
 
-    const newTask: Task = {
-      id: Date.now().toString(),
+    const newTask: Omit<Task, "id"> = {
       clientId: clientId!,
       naziv: taskFormData.naziv,
       rok: taskFormData.rok,
@@ -157,70 +221,168 @@ const ClientDetailNew = () => {
     };
 
     try {
-      const allTasks = await storage.getJSON<Task[]>("crm-tasks") || [];
-      const updated = [...allTasks, newTask];
-      await storage.setJSON("crm-tasks", updated);
-      setTasks([...tasks, newTask]);
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert([newTask])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTasks([...tasks, data]);
       setTaskFormData({ naziv: "", rok: new Date().toISOString().split("T")[0] });
       setOpenTaskDialog(false);
-      toast({ title: "Uspjeh", description: "Zadatak je dodan" });
+      toast({
+        title: "Uspjeh",
+        description: "Zadatak je dodan",
+      });
     } catch (error) {
-      toast({ title: "Greška", description: "Nije moguće dodati zadatak", variant: "destructive" });
+      console.error("Error adding task:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće dodati zadatak",
+        variant: "destructive",
+      });
     }
   };
 
   const toggleTask = async (taskId: string) => {
-    const updated = tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
-    setTasks(updated);
+    if (!supabase) return;
+
     try {
-      const allTasks = await storage.getJSON<Task[]>("crm-tasks") || [];
-      const allUpdated = allTasks.map(t => {
-        const found = updated.find(ut => ut.id === t.id);
-        return found || t;
-      });
-      await storage.setJSON("crm-tasks", allUpdated);
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const { error } = await supabase
+        .from("tasks")
+        .update({ completed: !task.completed })
+        .eq("id", taskId);
+
+      if (error) throw error;
+
+      const updatedTasks = tasks.map(t =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      );
+      setTasks(updatedTasks);
     } catch (error) {
-      console.error("Error updating task:", error);
+      console.error("Error toggling task:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće ažurirati zadatak",
+        variant: "destructive",
+      });
     }
   };
 
   const deleteTask = async (taskId: string) => {
-    const filtered = tasks.filter(t => t.id !== taskId);
-    setTasks(filtered);
+    if (!supabase) return;
+
     try {
-      const allTasks = await storage.getJSON<Task[]>("crm-tasks") || [];
-      await storage.setJSON("crm-tasks", allTasks.filter(t => t.id !== taskId));
-      toast({ title: "Uspjeh", description: "Zadatak je obrisan" });
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", taskId);
+
+      if (error) throw error;
+
+      setTasks(tasks.filter(t => t.id !== taskId));
+      toast({
+        title: "Uspjeh",
+        description: "Zadatak je obrisan",
+      });
     } catch (error) {
-      toast({ title: "Greška", description: "Nije moguće obrisati zadatak", variant: "destructive" });
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće obrisati zadatak",
+        variant: "destructive",
+      });
     }
   };
 
   const addCommunication = async (entry: Omit<CommunicationEntry, "id">) => {
-    const newEntry: CommunicationEntry = {
-      ...entry,
-      id: Date.now().toString(),
-    };
+    if (!supabase) return;
 
     try {
-      const allComms = await storage.getJSON<CommunicationEntry[]>("crm-communications") || [];
-      await storage.setJSON("crm-communications", [...allComms, newEntry]);
-      setCommunications([...communications, newEntry]);
+      const { data, error } = await supabase
+        .from("communication_entries")
+        .insert([entry])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCommunications([...communications, data]);
 
       // Update client's last contact date
       if (client) {
-        const updatedClient = { ...client, datumZadnjegKontakta: entry.datum };
-        setClient(updatedClient);
-        
-        const allClients = await storage.getJSON<Client[]>("crm-clients") || [];
-        await storage.setJSON("crm-clients", 
-          allClients.map(c => c.id === clientId ? updatedClient : c)
-        );
+        const { error: updateError } = await supabase
+          .from("clients")
+          .update({ datumZadnjegKontakta: entry.datum })
+          .eq("id", client.id);
+
+        if (!updateError) {
+          setClient({ ...client, datumZadnjegKontakta: entry.datum });
+        }
       }
 
-      toast({ title: "Uspjeh", description: "Komunikacija je zabilježena" });
+      toast({
+        title: "Uspjeh",
+        description: "Komunikacija je zabilježena",
+      });
     } catch (error) {
-      toast({ title: "Greška", description: "Nije moguće dodati komunikaciju", variant: "destructive" });
+      console.error("Error adding communication:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće dodati komunikaciju",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addInvoiceToFinance = async (invoice: Invoice) => {
+    if (!supabase) return;
+
+    try {
+      const transaction = {
+        opis: `Faktura #${invoice.brojFakture} - ${client?.ime}`,
+        iznos: invoice.iznos,
+        tip: "prihod" as const,
+        datum: invoice.datumIzdavanja,
+      };
+
+      const { error } = await supabase
+        .from("transactions")
+        .insert([transaction]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Uspjeh",
+        description: "Transakcija dodana u Finansije",
+      });
+    } catch (error) {
+      console.error("Error adding transaction:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće dodati transakciju",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const saveClientNotes = async () => {
+    if (!client || !supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({ biljeske: client.biljeske })
+        .eq("id", client.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error auto-saving notes:", error);
     }
   };
 
@@ -252,7 +414,13 @@ const ClientDetailNew = () => {
     }
   };
 
-  if (!client) return null;
+  if (loading || !client) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Učitavanje...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -426,22 +594,7 @@ const ClientDetailNew = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={async () => {
-                                  try {
-                                    const financeTransactions = await storage.getJSON<any[]>("finance-transactions") || [];
-                                    const newTransaction = {
-                                      id: Date.now().toString(),
-                                      opis: `Faktura #${inv.brojFakture} - ${client?.ime}`,
-                                      iznos: inv.iznos,
-                                      tip: "prihod" as const,
-                                      datum: inv.datumIzdavanja,
-                                    };
-                                    await storage.setJSON("finance-transactions", [newTransaction, ...financeTransactions]);
-                                    toast({ title: "Uspjeh", description: "Transakcija dodana u Finansije" });
-                                  } catch (error) {
-                                    toast({ title: "Greška", description: "Nije moguće dodati transakciju", variant: "destructive" });
-                                  }
-                                }}
+                                onClick={() => addInvoiceToFinance(inv)}
                               >
                                 Zabilježi u Finansije
                               </Button>
@@ -551,15 +704,7 @@ const ClientDetailNew = () => {
                     setClient({ ...client, biljeske: e.target.value });
                     // Auto-save after typing stops
                     clearTimeout((window as any).notesTimeout);
-                    (window as any).notesTimeout = setTimeout(async () => {
-                      try {
-                        const clients = await storage.getJSON<Client[]>("crm-clients") || [];
-                        const updated = clients.map((c) => (c.id === client.id ? client : c));
-                        await storage.setJSON("crm-clients", updated);
-                      } catch (error) {
-                        console.error("Error auto-saving notes:", error);
-                      }
-                    }, 1000);
+                    (window as any).notesTimeout = setTimeout(saveClientNotes, 1000);
                   }}
                   placeholder="Dodajte bilješke o klijentu..."
                   className="min-h-[300px]"
@@ -583,15 +728,7 @@ const ClientDetailNew = () => {
             <AdminProposals
               clientId={clientId!}
               proposals={proposals}
-              onUpdate={async (updatedProposals) => {
-                setProposals(updatedProposals);
-                await storage.setJSON("crm-proposals", [
-                  ...await storage.getJSON<Proposal[]>("crm-proposals").then(all => 
-                    all?.filter(p => p.clientId !== clientId) || []
-                  ),
-                  ...updatedProposals
-                ]);
-              }}
+              onUpdate={setProposals}
               deals={deals}
             />
           </TabsContent>
@@ -601,15 +738,7 @@ const ClientDetailNew = () => {
             <AdminProjects
               clientId={clientId!}
               projects={projects}
-              onUpdate={async (updatedProjects) => {
-                setProjects(updatedProjects);
-                await storage.setJSON("crm-projects", [
-                  ...await storage.getJSON<Project[]>("crm-projects").then(all => 
-                    all?.filter(p => p.clientId !== clientId) || []
-                  ),
-                  ...updatedProjects
-                ]);
-              }}
+              onUpdate={setProjects}
             />
           </TabsContent>
 
@@ -618,15 +747,7 @@ const ClientDetailNew = () => {
             <AdminSubscriptions
               clientId={clientId!}
               subscriptions={subscriptions}
-              onUpdate={async (updatedSubscriptions) => {
-                setSubscriptions(updatedSubscriptions);
-                await storage.setJSON("crm-subscriptions", [
-                  ...await storage.getJSON<Subscription[]>("crm-subscriptions").then(all => 
-                    all?.filter(s => s.clientId !== clientId) || []
-                  ),
-                  ...updatedSubscriptions
-                ]);
-              }}
+              onUpdate={setSubscriptions}
             />
           </TabsContent>
 
@@ -635,15 +756,7 @@ const ClientDetailNew = () => {
             <AdminVault
               clientId={clientId!}
               vaultEntries={vaultEntries}
-              onUpdate={async (updatedEntries) => {
-                setVaultEntries(updatedEntries);
-                await storage.setJSON("crm-vault", [
-                  ...await storage.getJSON<VaultEntry[]>("crm-vault").then(all => 
-                    all?.filter(v => v.clientId !== clientId) || []
-                  ),
-                  ...updatedEntries
-                ]);
-              }}
+              onUpdate={setVaultEntries}
             />
           </TabsContent>
 
@@ -652,15 +765,7 @@ const ClientDetailNew = () => {
             <AdminSupportTickets
               clientId={clientId!}
               tickets={tickets}
-              onUpdate={async (updatedTickets) => {
-                setTickets(updatedTickets);
-                await storage.setJSON("crm-tickets", [
-                  ...await storage.getJSON<SupportTicket[]>("crm-tickets").then(all => 
-                    all?.filter(t => t.clientId !== clientId) || []
-                  ),
-                  ...updatedTickets
-                ]);
-              }}
+              onUpdate={setTickets}
             />
           </TabsContent>
         </Tabs>

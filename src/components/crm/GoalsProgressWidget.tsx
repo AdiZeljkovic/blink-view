@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Target, TrendingUp, Trophy } from "lucide-react";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface Goal {
   id: string;
@@ -16,17 +16,27 @@ interface GoalsProgressWidgetProps {
 }
 
 export const GoalsProgressWidget = ({ totalRevenue }: GoalsProgressWidgetProps) => {
+  const { supabase } = useSupabase();
   const [goals, setGoals] = useState<Goal[]>([]);
 
   useEffect(() => {
-    loadGoals();
-  }, []);
+    if (supabase) {
+      loadGoals();
+    }
+  }, [supabase]);
 
   const loadGoals = async () => {
+    if (!supabase) return;
+
     try {
-      const savedGoals = await storage.getJSON<Goal[]>("goals") || [];
+      const { data, error } = await supabase
+        .from("goals")
+        .select("*");
+
+      if (error) throw error;
+
       // Filter only revenue-related goals
-      const revenueGoals = savedGoals.filter(g => 
+      const revenueGoals = (data || []).filter((g: Goal) => 
         g.title.toLowerCase().includes("zarad") || 
         g.title.toLowerCase().includes("prihod") ||
         g.category === "financial"

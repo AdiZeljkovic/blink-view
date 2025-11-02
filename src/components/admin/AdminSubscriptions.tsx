@@ -13,6 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, RefreshCw } from "lucide-react";
 import { Subscription } from "@/types/crm";
+import { useSupabase } from "@/hooks/useSupabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminSubscriptionsProps {
   clientId: string;
@@ -21,6 +23,8 @@ interface AdminSubscriptionsProps {
 }
 
 export const AdminSubscriptions = ({ clientId, subscriptions, onUpdate }: AdminSubscriptionsProps) => {
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
   const [newSubscription, setNewSubscription] = useState<Partial<Subscription>>({
     nazivUsluge: "",
     mjesecniIznos: 0,
@@ -28,32 +32,96 @@ export const AdminSubscriptions = ({ clientId, subscriptions, onUpdate }: AdminS
     aktivna: true,
   });
 
-  const addSubscription = () => {
-    if (newSubscription.nazivUsluge && newSubscription.mjesecniIznos) {
-      const subscription: Subscription = {
-        id: Date.now().toString(),
-        clientId,
-        nazivUsluge: newSubscription.nazivUsluge,
-        mjesecniIznos: newSubscription.mjesecniIznos,
-        datumPocetka: new Date().toISOString().split("T")[0],
-        danNaplate: newSubscription.danNaplate || 1,
-        aktivna: true,
-      };
-      onUpdate([...subscriptions, subscription]);
+  const addSubscription = async () => {
+    if (!newSubscription.nazivUsluge || !newSubscription.mjesecniIznos || !supabase) return;
+
+    const subscription: Omit<Subscription, "id"> = {
+      clientId,
+      nazivUsluge: newSubscription.nazivUsluge,
+      mjesecniIznos: newSubscription.mjesecniIznos,
+      datumPocetka: new Date().toISOString().split("T")[0],
+      danNaplate: newSubscription.danNaplate || 1,
+      aktivna: true,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .insert([subscription])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      onUpdate([...subscriptions, data]);
       setNewSubscription({ nazivUsluge: "", mjesecniIznos: 0, danNaplate: 1, aktivna: true });
+      toast({
+        title: "Uspjeh",
+        description: "Pretplata kreirana!",
+      });
+    } catch (error) {
+      console.error("Error adding subscription:", error);
+      toast({
+        title: "Greška",
+        description: "Greška pri kreiranju pretplate",
+        variant: "destructive",
+      });
     }
   };
 
-  const toggleActive = (subscriptionId: string) => {
-    onUpdate(
-      subscriptions.map(s =>
-        s.id === subscriptionId ? { ...s, aktivna: !s.aktivna } : s
-      )
-    );
+  const toggleActive = async (subscriptionId: string) => {
+    if (!supabase) return;
+
+    const subscription = subscriptions.find(s => s.id === subscriptionId);
+    if (!subscription) return;
+
+    try {
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ aktivna: !subscription.aktivna })
+        .eq("id", subscriptionId);
+
+      if (error) throw error;
+
+      onUpdate(
+        subscriptions.map(s =>
+          s.id === subscriptionId ? { ...s, aktivna: !s.aktivna } : s
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling subscription:", error);
+      toast({
+        title: "Greška",
+        description: "Greška pri ažuriranju pretplate",
+        variant: "destructive",
+      });
+    }
   };
 
-  const deleteSubscription = (subscriptionId: string) => {
-    onUpdate(subscriptions.filter(s => s.id !== subscriptionId));
+  const deleteSubscription = async (subscriptionId: string) => {
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("subscriptions")
+        .delete()
+        .eq("id", subscriptionId);
+
+      if (error) throw error;
+
+      onUpdate(subscriptions.filter(s => s.id !== subscriptionId));
+      toast({
+        title: "Uspjeh",
+        description: "Pretplata obrisana!",
+      });
+    } catch (error) {
+      console.error("Error deleting subscription:", error);
+      toast({
+        title: "Greška",
+        description: "Greška pri brisanju pretplate",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
