@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Gamepad2, Newspaper, Video, MessageSquare, RefreshCw, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface FeedItem {
   title: string;
@@ -20,6 +20,7 @@ interface RSSFeed {
 }
 
 const Gaming = () => {
+  const { supabase } = useSupabase();
   const [gamingNews, setGamingNews] = useState<FeedItem[]>([]);
   const [redditPosts, setRedditPosts] = useState<FeedItem[]>([]);
   const [youtubeVideos, setYoutubeVideos] = useState<FeedItem[]>([]);
@@ -31,31 +32,41 @@ const Gaming = () => {
   const [pageTitle, setPageTitle] = useState("Gaming Hub");
 
   useEffect(() => {
-    // Load settings from localStorage
     const savedTitle = localStorage.getItem("gaming-widget-title");
     if (savedTitle) setPageTitle(savedTitle);
     
-    fetchGamingFeeds();
-    
-    // Auto-refresh every 5 minutes
-    const interval = setInterval(() => {
-      fetchGamingFeeds(true);
-    }, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    if (supabase) {
+      fetchGamingFeeds();
+      const interval = setInterval(() => fetchGamingFeeds(true), 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [supabase]);
 
   const fetchGamingFeeds = async (silent = false) => {
+    if (!supabase) return;
     if (!silent) setLoading(true);
     setRefreshing(!silent);
     
     try {
-      const savedFeeds = await storage.getJSON<RSSFeed[]>("gaming-rss-feeds");
-      const feeds: RSSFeed[] = savedFeeds || [
-        { id: "1", name: "IGN", url: "https://www.ign.com/feed.xml", type: "news" },
-        { id: "2", name: "Polygon", url: "https://www.polygon.com/rss/index.xml", type: "news" },
-        { id: "3", name: "r/gaming", url: "https://www.reddit.com/r/gaming.json", type: "reddit" },
-      ];
+      const { data: feedsData, error } = await supabase
+        .from("rss_feeds")
+        .select("*")
+        .eq("tip", "gaming");
+
+      if (error) throw error;
+
+      const feeds: RSSFeed[] = feedsData && feedsData.length > 0
+        ? feedsData.map((f: any) => ({
+            id: f.id,
+            name: f.naziv,
+            url: f.url,
+            type: "news" as const
+          }))
+        : [
+            { id: "1", name: "IGN", url: "https://www.ign.com/feed.xml", type: "news" },
+            { id: "2", name: "Polygon", url: "https://www.polygon.com/rss/index.xml", type: "news" },
+            { id: "3", name: "r/gaming", url: "https://www.reddit.com/r/gaming.json", type: "reddit" },
+          ];
 
       const newsFeeds = feeds.filter(f => f.type === "news");
       const redditFeeds = feeds.filter(f => f.type === "reddit");

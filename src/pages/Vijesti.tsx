@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Globe, Newspaper, MessageSquare, RefreshCw, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface FeedItem {
   title: string;
@@ -21,6 +21,7 @@ interface RSSFeed {
 }
 
 const Vijesti = () => {
+  const { supabase } = useSupabase();
   const [worldNews, setWorldNews] = useState<FeedItem[]>([]);
   const [regionalNews, setRegionalNews] = useState<FeedItem[]>([]);
   const [redditPosts, setRedditPosts] = useState<FeedItem[]>([]);
@@ -32,31 +33,43 @@ const Vijesti = () => {
   const [pageTitle, setPageTitle] = useState("Vijesti");
 
   useEffect(() => {
-    const loadSettings = async () => {
-      const savedTitle = localStorage.getItem("vijesti-widget-title");
-      if (savedTitle) setPageTitle(savedTitle);
-      
-      await fetchNewsFeeds();
-    };
+    const savedTitle = localStorage.getItem("vijesti-widget-title");
+    if (savedTitle) setPageTitle(savedTitle);
     
-    loadSettings();
-    const interval = setInterval(() => fetchNewsFeeds(true), 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    if (supabase) {
+      fetchNewsFeeds();
+      const interval = setInterval(() => fetchNewsFeeds(true), 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [supabase]);
 
   const fetchNewsFeeds = async (silent = false) => {
+    if (!supabase) return;
     if (!silent) setLoading(true);
     setRefreshing(!silent);
     
     try {
-      const savedFeeds = await storage.getJSON<RSSFeed[]>("vijesti-rss-feeds");
-      const feeds: RSSFeed[] = savedFeeds || [
-        { id: "1", name: "BBC News", url: "http://feeds.bbci.co.uk/news/world/rss.xml", type: "world" },
-        { id: "2", name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", type: "world" },
-        { id: "3", name: "Klix.ba", url: "https://www.klix.ba/rss", type: "regional" },
-        { id: "4", name: "Blic.rs", url: "https://www.blic.rs/rss", type: "regional" },
-        { id: "5", name: "r/worldnews", url: "https://www.reddit.com/r/worldnews.json", type: "reddit" },
-      ];
+      const { data: feedsData, error } = await supabase
+        .from("rss_feeds")
+        .select("*")
+        .eq("tip", "vijesti");
+
+      if (error) throw error;
+
+      const feeds: RSSFeed[] = feedsData && feedsData.length > 0
+        ? feedsData.map((f: any) => ({
+            id: f.id,
+            name: f.naziv,
+            url: f.url,
+            type: "world" as const
+          }))
+        : [
+            { id: "1", name: "BBC News", url: "http://feeds.bbci.co.uk/news/world/rss.xml", type: "world" },
+            { id: "2", name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", type: "world" },
+            { id: "3", name: "Klix.ba", url: "https://www.klix.ba/rss", type: "regional" },
+            { id: "4", name: "Blic.rs", url: "https://www.blic.rs/rss", type: "regional" },
+            { id: "5", name: "r/worldnews", url: "https://www.reddit.com/r/worldnews.json", type: "reddit" },
+          ];
 
       const worldFeeds = feeds.filter(f => f.type === "world");
       const regionalFeeds = feeds.filter(f => f.type === "regional");

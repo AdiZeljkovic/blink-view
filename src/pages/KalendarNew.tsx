@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { bs } from "date-fns/locale";
 import { toast } from "sonner";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface Event {
   id: string;
@@ -22,6 +22,7 @@ interface Event {
 }
 
 const KalendarNew = () => {
+  const { supabase } = useSupabase();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<Event[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -32,54 +33,95 @@ const KalendarNew = () => {
   });
 
   useEffect(() => {
-    const loadEvents = async () => {
-      try {
-        const savedEvents = await storage.getJSON<Event[]>("calendar-events");
-        if (savedEvents) {
-          setEvents(savedEvents);
-        }
-      } catch (error) {
-        console.error("Error loading calendar events:", error);
-        toast.error("Greška pri učitavanju događaja");
-      }
-    };
-    loadEvents();
-  }, []);
+    if (supabase) {
+      loadEvents();
+    }
+  }, [supabase]);
 
-  const saveEvents = async (updatedEvents: Event[]) => {
-    setEvents(updatedEvents);
+  const loadEvents = async () => {
+    if (!supabase) return;
+    
     try {
-      await storage.setJSON("calendar-events", updatedEvents);
+      const { data, error } = await supabase
+        .from("calendar_events")
+        .select("*")
+        .order("datum", { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        setEvents(data.map((e: any) => ({
+          id: e.id,
+          title: e.naslov,
+          description: e.tip || "",
+          date: e.datum,
+          time: e.vrijeme || "00:00",
+          color: `hsl(${Math.random() * 360}, 70%, 50%)`
+        })));
+      }
     } catch (error) {
-      console.error("Error saving calendar events:", error);
-      toast.error("Greška pri čuvanju događaja");
+      console.error("Error loading calendar events:", error);
+      toast.error("Greška pri učitavanju događaja");
     }
   };
 
   const addEvent = async () => {
+    if (!supabase) return;
     if (!newEvent.title.trim()) {
       toast.error("Unesite naziv događaja");
       return;
     }
 
-    const event: Event = {
-      id: Date.now().toString(),
-      title: newEvent.title,
-      description: newEvent.description,
-      date: format(selectedDate, "yyyy-MM-dd"),
-      time: newEvent.time,
-      color: `hsl(${Math.random() * 360}, 70%, 50%)`
-    };
+    try {
+      const { data, error } = await supabase
+        .from("calendar_events")
+        .insert([{
+          naslov: newEvent.title,
+          datum: format(selectedDate, "yyyy-MM-dd"),
+          vrijeme: newEvent.time,
+          tip: newEvent.description || "dogadjaj"
+        }])
+        .select()
+        .single();
 
-    await saveEvents([...events, event]);
-    setNewEvent({ title: "", description: "", time: "12:00" });
-    setIsDialogOpen(false);
-    toast.success("Događaj dodan");
+      if (error) throw error;
+
+      const newEventObj: Event = {
+        id: data.id,
+        title: data.naslov,
+        description: data.tip || "",
+        date: data.datum,
+        time: data.vrijeme,
+        color: `hsl(${Math.random() * 360}, 70%, 50%)`
+      };
+
+      setEvents([...events, newEventObj]);
+      setNewEvent({ title: "", description: "", time: "12:00" });
+      setIsDialogOpen(false);
+      toast.success("Događaj dodan");
+    } catch (error) {
+      console.error("Error adding event:", error);
+      toast.error("Greška pri dodavanju događaja");
+    }
   };
 
   const deleteEvent = async (id: string) => {
-    await saveEvents(events.filter(e => e.id !== id));
-    toast.success("Događaj obrisan");
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("calendar_events")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setEvents(events.filter(e => e.id !== id));
+      toast.success("Događaj obrisan");
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast.error("Greška pri brisanju događaja");
+    }
   };
 
   const getEventsForDate = (date: Date) => {

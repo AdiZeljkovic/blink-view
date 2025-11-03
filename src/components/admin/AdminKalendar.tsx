@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface Event {
   id: string;
@@ -19,64 +19,116 @@ interface Event {
 }
 
 const AdminKalendar = () => {
+  const { supabase } = useSupabase();
   const [events, setEvents] = useState<Event[]>([]);
   const [widgetTitle, setWidgetTitle] = useState("Kalendar");
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const savedEvents = await storage.getJSON<Event[]>("calendar-events");
-        const savedTitle = localStorage.getItem("kalendar-widget-title");
-        
-        if (savedEvents) {
-          setEvents(savedEvents);
-        }
-        
-        if (savedTitle) setWidgetTitle(savedTitle);
-      } catch (error) {
-        console.error("Error loading calendar data:", error);
+    const savedTitle = localStorage.getItem("kalendar-widget-title");
+    if (savedTitle) setWidgetTitle(savedTitle);
+    
+    if (supabase) {
+      loadData();
+    }
+  }, [supabase]);
+
+  const loadData = async () => {
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("calendar_events")
+        .select("*")
+        .order("datum", { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        setEvents(data.map((e: any) => ({
+          id: e.id,
+          title: e.naslov,
+          description: e.tip || "",
+          date: e.datum,
+          time: e.vrijeme || "00:00",
+          color: `hsl(${Math.random() * 360}, 70%, 50%)`
+        })));
       }
-    };
-    loadData();
-  }, []);
+    } catch (error) {
+      console.error("Error loading calendar data:", error);
+    }
+  };
 
   const addEvent = async () => {
-    const newEvent: Event = {
-      id: Date.now().toString(),
-      title: "",
-      description: "",
-      date: format(new Date(), "yyyy-MM-dd"),
-      time: "12:00",
-      color: `hsl(${Math.random() * 360}, 70%, 50%)`
-    };
-    const updated = [...events, newEvent];
-    setEvents(updated);
+    if (!supabase) return;
+
     try {
-      await storage.setJSON("calendar-events", updated);
+      const { data, error } = await supabase
+        .from("calendar_events")
+        .insert([{
+          naslov: "Novi Događaj",
+          datum: format(new Date(), "yyyy-MM-dd"),
+          vrijeme: "12:00",
+          tip: "dogadjaj"
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setEvents([...events, {
+        id: data.id,
+        title: data.naslov,
+        description: data.tip || "",
+        date: data.datum,
+        time: data.vrijeme,
+        color: `hsl(${Math.random() * 360}, 70%, 50%)`
+      }]);
+      toast.success("Događaj dodan");
     } catch (error) {
+      console.error("Error adding event:", error);
       toast.error("Greška pri dodavanju događaja");
     }
   };
 
   const updateEvent = async (id: string, field: keyof Event, value: string) => {
-    const updated = events.map(e => 
-      e.id === id ? { ...e, [field]: value } : e
-    );
-    setEvents(updated);
+    if (!supabase) return;
+
     try {
-      await storage.setJSON("calendar-events", updated);
+      const updateData: any = {};
+      if (field === "title") updateData.naslov = value;
+      else if (field === "date") updateData.datum = value;
+      else if (field === "time") updateData.vrijeme = value;
+      else if (field === "description") updateData.tip = value;
+
+      const { error } = await supabase
+        .from("calendar_events")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setEvents(events.map(e => e.id === id ? { ...e, [field]: value } : e));
     } catch (error) {
+      console.error("Error updating event:", error);
       toast.error("Greška pri ažuriranju događaja");
     }
   };
 
   const deleteEvent = async (id: string) => {
-    const updated = events.filter(e => e.id !== id);
-    setEvents(updated);
+    if (!supabase) return;
+
     try {
-      await storage.setJSON("calendar-events", updated);
+      const { error } = await supabase
+        .from("calendar_events")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setEvents(events.filter(e => e.id !== id));
       toast.success("Događaj obrisan");
     } catch (error) {
+      console.error("Error deleting event:", error);
       toast.error("Greška pri brisanju događaja");
     }
   };

@@ -6,96 +6,109 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 
 const AdminBoards = () => {
+  const { supabase } = useSupabase();
   const [columns, setColumns] = useState<any[]>([]);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const saved = await storage.getJSON<any[]>("kanban-columns");
-        if (saved) setColumns(saved);
-      } catch (error) {
-        console.error("Error loading kanban columns:", error);
-        toast.error("Greška pri učitavanju podataka");
+    if (supabase) {
+      loadData();
+    }
+  }, [supabase]);
+
+  const loadData = async () => {
+    if (!supabase) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("boards")
+        .select("*")
+        .order("pozicija", { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        setColumns(data.map((b: any) => ({
+          id: b.id,
+          title: b.naziv,
+          tasks: []
+        })));
       }
-    };
-    loadData();
-  }, []);
+    } catch (error) {
+      console.error("Error loading boards:", error);
+      toast.error("Greška pri učitavanju podataka");
+    }
+  };
 
   const addColumn = async () => {
-    const newColumn = {
-      id: Date.now().toString(),
-      title: "Nova Kolona",
-      tasks: []
-    };
-    const updated = [...columns, newColumn];
-    setColumns(updated);
-    await storage.setJSON("kanban-columns", updated);
-    toast.success("Kolona dodana");
+    if (!supabase) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("boards")
+        .insert([{ naziv: "Nova Kolona", boja: "#3b82f6", pozicija: columns.length }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setColumns([...columns, { id: data.id, title: data.naziv, tasks: [] }]);
+      toast.success("Kolona dodana");
+    } catch (error) {
+      console.error("Error adding column:", error);
+      toast.error("Greška pri dodavanju kolone");
+    }
   };
 
   const updateColumnTitle = async (id: string, title: string) => {
-    const updated = columns.map(c => 
-      c.id === id ? { ...c, title } : c
-    );
-    setColumns(updated);
-    await storage.setJSON("kanban-columns", updated);
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("boards")
+        .update({ naziv: title })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setColumns(columns.map(c => c.id === id ? { ...c, title } : c));
+    } catch (error) {
+      console.error("Error updating column:", error);
+    }
   };
 
   const deleteColumn = async (id: string) => {
-    const updated = columns.filter(c => c.id !== id);
-    setColumns(updated);
-    await storage.setJSON("kanban-columns", updated);
-    toast.success("Kolona obrisana");
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("boards")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setColumns(columns.filter(c => c.id !== id));
+      toast.success("Kolona obrisana");
+    } catch (error) {
+      console.error("Error deleting column:", error);
+      toast.error("Greška pri brisanju kolone");
+    }
   };
 
   const addTask = async (columnId: string) => {
-    const newTask = {
-      id: Date.now().toString(),
-      title: "",
-      description: "",
-      priority: "medium",
-      labels: [],
-      createdAt: new Date().toISOString()
-    };
-    const updated = columns.map(c => 
-      c.id === columnId ? { ...c, tasks: [...c.tasks, newTask] } : c
-    );
-    setColumns(updated);
-    await storage.setJSON("kanban-columns", updated);
+    // Tasks are managed in Boards.tsx directly with cards table
+    toast.info("Dodajte taskove direktno na Boards stranici");
   };
 
   const updateTask = async (columnId: string, taskId: string, field: string, value: any) => {
-    const updated = columns.map(c => {
-      if (c.id === columnId) {
-        return {
-          ...c,
-          tasks: c.tasks.map((t: any) => 
-            t.id === taskId ? { ...t, [field]: value } : t
-          )
-        };
-      }
-      return c;
-    });
-    setColumns(updated);
-    await storage.setJSON("kanban-columns", updated);
+    // Tasks are managed in Boards.tsx directly with cards table
   };
 
   const deleteTask = async (columnId: string, taskId: string) => {
-    const updated = columns.map(c => {
-      if (c.id === columnId) {
-        return {
-          ...c,
-          tasks: c.tasks.filter((t: any) => t.id !== taskId)
-        };
-      }
-      return c;
-    });
-    setColumns(updated);
-    await storage.setJSON("kanban-columns", updated);
-    toast.success("Task obrisan");
+    // Tasks are managed in Boards.tsx directly with cards table
   };
 
   return (

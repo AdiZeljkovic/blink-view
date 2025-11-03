@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface Task {
   id: string;
@@ -40,6 +40,7 @@ const priorityColors = {
 };
 
 const Boards = () => {
+  const { supabase } = useSupabase();
   const [columns, setColumns] = useState<Column[]>(defaultColumns);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
@@ -54,59 +55,105 @@ const Boards = () => {
     label: "",
   });
 
-  // Load data from storage
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const savedTasks = await storage.getJSON<Task[]>("kanban-tasks");
-        const savedColumns = await storage.getJSON<Column[]>("kanban-columns");
-        
-        if (savedTasks) {
-          setTasks(savedTasks);
-        }
-        if (savedColumns) {
-          setColumns(savedColumns);
-        }
-      } catch (error) {
-        console.error("Error loading kanban data:", error);
-        toast.error("Greška pri učitavanju podataka");
+    if (supabase) {
+      loadData();
+    }
+  }, [supabase]);
+
+  const loadData = async () => {
+    if (!supabase) return;
+    
+    try {
+      // Load columns from boards table
+      const { data: boardsData, error: boardsError } = await supabase
+        .from("boards")
+        .select("*")
+        .order("pozicija", { ascending: true });
+      
+      if (boardsError) throw boardsError;
+      
+      if (boardsData && boardsData.length > 0) {
+        setColumns(boardsData.map((b: any) => ({
+          id: b.id,
+          title: b.naziv,
+          color: b.boja
+        })));
       }
-    };
-    loadData();
-  }, []);
-
-  // Save tasks
-  const saveTasks = async (updatedTasks: Task[]) => {
-    setTasks(updatedTasks);
-    await storage.setJSON("kanban-tasks", updatedTasks);
+      
+      // Load tasks from cards table
+      const { data: cardsData, error: cardsError } = await supabase
+        .from("cards")
+        .select("*")
+        .order("pozicija", { ascending: true });
+      
+      if (cardsError) throw cardsError;
+      
+      if (cardsData) {
+        setTasks(cardsData.map((c: any) => {
+          const content = JSON.parse(c.sadrzaj || '{}');
+          return {
+            id: c.id,
+            title: content.title || "",
+            description: content.description || "",
+            priority: content.priority || "medium",
+            label: content.label || "",
+            columnId: c.board_id,
+            createdAt: c.created_at
+          };
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading kanban data:", error);
+      toast.error("Greška pri učitavanju podataka");
+    }
   };
 
-  // Save columns
-  const saveColumns = async (updatedColumns: Column[]) => {
-    setColumns(updatedColumns);
-    await storage.setJSON("kanban-columns", updatedColumns);
-  };
-
-  const addTask = () => {
+  const addTask = async () => {
+    if (!supabase) return;
     if (!newTask.title.trim()) {
       toast.error("Unesite naziv zadatka");
       return;
     }
 
-    const task: Task = {
-      id: Date.now().toString(),
-      title: newTask.title,
-      description: newTask.description,
-      priority: newTask.priority,
-      label: newTask.label,
-      columnId: selectedColumn,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const cardContent = {
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        label: newTask.label
+      };
 
-    saveTasks([...tasks, task]);
-    setNewTask({ title: "", description: "", priority: "medium", label: "" });
-    setIsDialogOpen(false);
-    toast.success("Zadatak dodan");
+      const { data, error } = await supabase
+        .from("cards")
+        .insert([{
+          board_id: selectedColumn,
+          sadrzaj: JSON.stringify(cardContent),
+          pozicija: tasks.filter(t => t.columnId === selectedColumn).length
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newTaskObj: Task = {
+        id: data.id,
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        label: newTask.label,
+        columnId: selectedColumn,
+        createdAt: data.created_at,
+      };
+
+      setTasks([...tasks, newTaskObj]);
+      setNewTask({ title: "", description: "", priority: "medium", label: "" });
+      setIsDialogOpen(false);
+      toast.success("Zadatak dodan");
+    } catch (error) {
+      console.error("Error adding task:", error);
+      toast.error("Greška pri dodavanju zadatka");
+    }
   };
 
   const openEditDialog = (task: Task) => {
@@ -114,24 +161,55 @@ const Boards = () => {
     setIsEditDialogOpen(true);
   };
 
-  const updateTask = () => {
-    if (!editingTask || !editingTask.title.trim()) {
+  const updateTask = async () => {
+    if (!supabase || !editingTask) return;
+    if (!editingTask.title.trim()) {
       toast.error("Unesite naziv zadatka");
       return;
     }
 
-    const updated = tasks.map(t => 
-      t.id === editingTask.id ? editingTask : t
-    );
-    saveTasks(updated);
-    setIsEditDialogOpen(false);
-    setEditingTask(null);
-    toast.success("Zadatak ažuriran");
+    try {
+      const cardContent = {
+        title: editingTask.title,
+        description: editingTask.description,
+        priority: editingTask.priority,
+        label: editingTask.label
+      };
+
+      const { error } = await supabase
+        .from("cards")
+        .update({ sadrzaj: JSON.stringify(cardContent) })
+        .eq("id", editingTask.id);
+
+      if (error) throw error;
+
+      setTasks(tasks.map(t => t.id === editingTask.id ? editingTask : t));
+      setIsEditDialogOpen(false);
+      setEditingTask(null);
+      toast.success("Zadatak ažuriran");
+    } catch (error) {
+      console.error("Error updating task:", error);
+      toast.error("Greška pri ažuriranju zadatka");
+    }
   };
 
-  const deleteTask = (id: string) => {
-    saveTasks(tasks.filter((t) => t.id !== id));
-    toast.success("Zadatak obrisan");
+  const deleteTask = async (id: string) => {
+    if (!supabase) return;
+    
+    try {
+      const { error } = await supabase
+        .from("cards")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setTasks(tasks.filter((t) => t.id !== id));
+      toast.success("Zadatak obrisan");
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Greška pri brisanju zadatka");
+    }
   };
 
   const handleDragStart = (taskId: string) => {
@@ -142,36 +220,67 @@ const Boards = () => {
     e.preventDefault();
   };
 
-  const handleDrop = (columnId: string) => {
-    if (!draggedTask) return;
+  const handleDrop = async (columnId: string) => {
+    if (!supabase || !draggedTask) return;
 
-    const updatedTasks = tasks.map((task) =>
-      task.id === draggedTask ? { ...task, columnId } : task
-    );
-    saveTasks(updatedTasks);
-    setDraggedTask(null);
-    toast.success("Zadatak pomjeren");
+    try {
+      const { error } = await supabase
+        .from("cards")
+        .update({ board_id: columnId })
+        .eq("id", draggedTask);
+
+      if (error) throw error;
+
+      const updatedTasks = tasks.map((task) =>
+        task.id === draggedTask ? { ...task, columnId } : task
+      );
+      setTasks(updatedTasks);
+      setDraggedTask(null);
+      toast.success("Zadatak pomjeren");
+    } catch (error) {
+      console.error("Error moving task:", error);
+      toast.error("Greška pri premještanju zadatka");
+    }
   };
 
   const getTasksByColumn = (columnId: string) => {
     return tasks.filter((task) => task.columnId === columnId);
   };
 
-  const addColumn = () => {
+  const addColumn = async () => {
+    if (!supabase) return;
     const title = prompt("Unesite naziv kolone:");
     if (!title?.trim()) return;
 
-    const newColumn: Column = {
-      id: `col-${Date.now()}`,
-      title: title.trim(),
-      color: `hsl(${Math.random() * 360}, 70%, 50%)`,
-    };
+    try {
+      const { data, error } = await supabase
+        .from("boards")
+        .insert([{
+          naziv: title.trim(),
+          boja: `hsl(${Math.random() * 360}, 70%, 50%)`,
+          pozicija: columns.length
+        }])
+        .select()
+        .single();
 
-    saveColumns([...columns, newColumn]);
-    toast.success("Kolona dodana");
+      if (error) throw error;
+
+      const newColumn: Column = {
+        id: data.id,
+        title: data.naziv,
+        color: data.boja,
+      };
+
+      setColumns([...columns, newColumn]);
+      toast.success("Kolona dodana");
+    } catch (error) {
+      console.error("Error adding column:", error);
+      toast.error("Greška pri dodavanju kolone");
+    }
   };
 
-  const deleteColumn = (columnId: string) => {
+  const deleteColumn = async (columnId: string) => {
+    if (!supabase) return;
     if (columns.length <= 1) {
       toast.error("Mora ostati bar jedna kolona");
       return;
@@ -183,8 +292,20 @@ const Boards = () => {
       return;
     }
 
-    saveColumns(columns.filter((col) => col.id !== columnId));
-    toast.success("Kolona obrisana");
+    try {
+      const { error } = await supabase
+        .from("boards")
+        .delete()
+        .eq("id", columnId);
+
+      if (error) throw error;
+
+      setColumns(columns.filter((col) => col.id !== columnId));
+      toast.success("Kolona obrisana");
+    } catch (error) {
+      console.error("Error deleting column:", error);
+      toast.error("Greška pri brisanju kolone");
+    }
   };
 
   return (

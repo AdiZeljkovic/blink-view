@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
@@ -14,10 +14,11 @@ interface Habit {
   id: string;
   naziv: string;
   grupa: string;
-  completed: { [date: string]: boolean };
+  completions: string[];
 }
 
 const HabitsGoalsNew = () => {
+  const { supabase } = useSupabase();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [newHabit, setNewHabit] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("zdravlje");
@@ -25,63 +26,140 @@ const HabitsGoalsNew = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadHabits = async () => {
-      try {
-        const saved = await storage.getJSON<Habit[]>("habits-data");
-        if (saved) setHabits(saved);
-      } catch (error) {
-        console.error("Error loading habits:", error);
-      }
-    };
-    loadHabits();
-  }, []);
+    if (supabase) {
+      loadHabits();
+    }
+  }, [supabase]);
 
-  const saveHabits = async (newHabits: Habit[]) => {
-    setHabits(newHabits);
+  const loadHabits = async () => {
+    if (!supabase) return;
+
     try {
-      await storage.setJSON("habits-data", newHabits);
+      const { data: habitsData, error: habitsError } = await supabase
+        .from("habits")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (habitsError) throw habitsError;
+
+      if (habitsData) {
+        // Load completions for each habit
+        const habitsWithCompletions = await Promise.all(
+          habitsData.map(async (h: any) => {
+            const { data: completions, error: compError } = await supabase
+              .from("habit_completions")
+              .select("datum")
+              .eq("habit_id", h.id);
+
+            if (compError) console.error("Error loading completions:", compError);
+
+            return {
+              id: h.id,
+              naziv: h.naziv,
+              grupa: "ostalo", // We don't store grupa in the database yet
+              completions: completions ? completions.map((c: any) => c.datum) : []
+            };
+          })
+        );
+
+        setHabits(habitsWithCompletions);
+      }
     } catch (error) {
-      toast({ title: "Greška", description: "Nije moguće sačuvati navike", variant: "destructive" });
+      console.error("Error loading habits:", error);
     }
   };
 
   const addHabit = async () => {
+    if (!supabase) return;
     if (!newHabit.trim()) {
       toast({ title: "Upozorenje", description: "Unesite naziv navike", variant: "destructive" });
       return;
     }
 
-    const habit: Habit = {
-      id: Date.now().toString(),
-      naziv: newHabit,
-      grupa: selectedGroup,
-      completed: {},
-    };
+    try {
+      const { data, error } = await supabase
+        .from("habits")
+        .insert([{ naziv: newHabit, ciljna_frekvencija: 7 }])
+        .select()
+        .single();
 
-    await saveHabits([...habits, habit]);
-    setNewHabit("");
-    toast({ title: "Uspjeh", description: "Navika je dodana" });
+      if (error) throw error;
+
+      setHabits([...habits, {
+        id: data.id,
+        naziv: data.naziv,
+        grupa: selectedGroup,
+        completions: []
+      }]);
+      setNewHabit("");
+      toast({ title: "Uspjeh", description: "Navika je dodana" });
+    } catch (error) {
+      console.error("Error adding habit:", error);
+      toast({ title: "Greška", description: "Nije moguće dodati naviku", variant: "destructive" });
+    }
   };
 
   const deleteHabit = async (id: string) => {
-    await saveHabits(habits.filter((h) => h.id !== id));
-    toast({ title: "Uspjeh", description: "Navika je obrisana" });
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("habits")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setHabits(habits.filter((h) => h.id !== id));
+      toast({ title: "Uspjeh", description: "Navika je obrisana" });
+    } catch (error) {
+      console.error("Error deleting habit:", error);
+      toast({ title: "Greška", description: "Nije moguće obrisati naviku", variant: "destructive" });
+    }
   };
 
   const toggleDay = async (habitId: string, date: string) => {
-    const updated = habits.map((h) => {
-      if (h.id === habitId) {
-        return {
-          ...h,
-          completed: {
-            ...h.completed,
-            [date]: !h.completed[date],
-          },
-        };
+    if (!supabase) return;
+
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+
+    const isCompleted = habit.completions.includes(date);
+
+    try {
+      if (isCompleted) {
+        // Remove completion
+        const { error } = await supabase
+          .from("habit_completions")
+          .delete()
+          .eq("habit_id", habitId)
+          .eq("datum", date);
+
+        if (error) throw error;
+
+        setHabits(habits.map(h =>
+          h.id === habitId
+            ? { ...h, completions: h.completions.filter(d => d !== date) }
+            : h
+        ));
+      } else {
+        // Add completion
+        const { error } = await supabase
+          .from("habit_completions")
+          .insert([{ habit_id: habitId, datum: date }]);
+
+        if (error) throw error;
+
+        setHabits(habits.map(h =>
+          h.id === habitId
+            ? { ...h, completions: [...h.completions, date] }
+            : h
+        ));
       }
-      return h;
-    });
-    await saveHabits(updated);
+    } catch (error) {
+      console.error("Error toggling day:", error);
+      toast({ title: "Greška", description: "Nije moguće ažurirati naviku", variant: "destructive" });
+    }
   };
 
   const getLast7Days = () => {
@@ -104,7 +182,7 @@ const HabitsGoalsNew = () => {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
-      if (habit.completed[dateStr]) {
+      if (habit.completions.includes(dateStr)) {
         streak++;
       } else {
         break;
@@ -118,7 +196,7 @@ const HabitsGoalsNew = () => {
       const groupHabits = habits.filter(h => h.grupa === group);
       const total = groupHabits.length * 7;
       const completed = groupHabits.reduce((sum, h) => {
-        return sum + getLast7Days().filter(d => h.completed[d.date]).length;
+        return sum + getLast7Days().filter(d => h.completions.includes(d.date)).length;
       }, 0);
       return {
         grupa: group.charAt(0).toUpperCase() + group.slice(1),
@@ -222,13 +300,13 @@ const HabitsGoalsNew = () => {
                               <span className="text-xs text-muted-foreground">{day.label}</span>
                               <div
                                 className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center cursor-pointer transition-all hover:scale-105 ${
-                                  habit.completed[day.date]
+                                  habit.completions.includes(day.date)
                                     ? "bg-primary border-primary shadow-glow-sm"
                                     : "border-border hover:border-primary/40"
                                 }`}
                                 onClick={() => toggleDay(habit.id, day.date)}
                               >
-                                {habit.completed[day.date] && (
+                                {habit.completions.includes(day.date) && (
                                   <Checkbox checked={true} className="pointer-events-none" />
                                 )}
                               </div>
