@@ -36,11 +36,17 @@ export const GoalsProgressWidget = ({ totalRevenue }: GoalsProgressWidgetProps) 
       if (error) throw error;
 
       // Filter only revenue-related goals
-      const revenueGoals = (data || []).filter((g: Goal) => 
-        g.title.toLowerCase().includes("zarad") || 
-        g.title.toLowerCase().includes("prihod") ||
-        g.category === "financial"
-      );
+      const revenueGoals = (data || []).filter((g: any) => 
+        g.naziv.toLowerCase().includes("zarad") || 
+        g.naziv.toLowerCase().includes("prihod") ||
+        g.tip === "mjesecni_prihod" ||
+        g.tip === "godisnji_prihod"
+      ).map((g: any) => ({
+        id: g.id,
+        title: g.naziv,
+        targetAmount: g.ciljana_vrijednost,
+        category: g.tip
+      }));
       setGoals(revenueGoals);
     } catch (error) {
       console.error("Error loading goals:", error);

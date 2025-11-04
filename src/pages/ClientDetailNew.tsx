@@ -94,26 +94,95 @@ const ClientDetailNew = () => {
         vaultRes,
         ticketsRes,
       ] = await Promise.all([
-        supabase.from("invoices").select("*").eq("clientId", clientId),
-        supabase.from("tasks").select("*").eq("clientId", clientId),
-        supabase.from("deals").select("*").eq("clientId", clientId),
-        supabase.from("communication_entries").select("*").eq("clientId", clientId),
-        supabase.from("proposals").select("*").eq("clientId", clientId),
-        supabase.from("projects").select("*").eq("clientId", clientId),
-        supabase.from("subscriptions").select("*").eq("clientId", clientId),
-        supabase.from("vault_entries").select("*").eq("clientId", clientId),
-        supabase.from("support_tickets").select("*").eq("clientId", clientId),
+        supabase.from("invoices").select("*").eq("client_id", clientId),
+        supabase.from("tasks").select("*").eq("client_id", clientId),
+        supabase.from("deals").select("*").eq("client_id", clientId),
+        supabase.from("communication_entries").select("*").eq("client_id", clientId),
+        supabase.from("proposals").select("*").eq("client_id", clientId),
+        supabase.from("projects").select("*").eq("client_id", clientId),
+        supabase.from("subscriptions").select("*").eq("client_id", clientId),
+        supabase.from("vault_entries").select("*").eq("client_id", clientId),
+        supabase.from("support_tickets").select("*").eq("client_id", clientId),
       ]);
 
-      setInvoices(invoicesRes.data || []);
-      setTasks(tasksRes.data || []);
-      setDeals(dealsRes.data || []);
-      setCommunications(communicationsRes.data || []);
-      setProposals(proposalsRes.data || []);
-      setProjects(projectsRes.data || []);
-      setSubscriptions(subscriptionsRes.data || []);
-      setVaultEntries(vaultRes.data || []);
-      setTickets(ticketsRes.data || []);
+      setInvoices((invoicesRes.data || []).map((inv: any) => ({
+        id: inv.id,
+        clientId: inv.client_id,
+        brojFakture: inv.broj_fakture,
+        iznos: inv.iznos,
+        datumIzdavanja: inv.datum_izdavanja,
+        rokPlacanja: inv.rok_placanja,
+        status: inv.status
+      })));
+      setTasks((tasksRes.data || []).map((t: any) => ({
+        id: t.id,
+        clientId: t.client_id,
+        naziv: t.naziv,
+        rok: t.rok,
+        completed: t.completed
+      })));
+      setDeals((dealsRes.data || []).map((d: any) => ({
+        id: d.id,
+        clientId: d.client_id,
+        naziv: d.naziv,
+        vrijednost: d.vrijednost,
+        status: d.status
+      })));
+      setCommunications((communicationsRes.data || []).map((c: any) => ({
+        id: c.id,
+        clientId: c.client_id,
+        datum: c.datum,
+        tip: c.tip,
+        sazetak: c.sazetak
+      })));
+      setProposals((proposalsRes.data || []).map((p: any) => ({
+        id: p.id,
+        clientId: p.client_id,
+        dealId: p.deal_id,
+        naziv: p.naziv,
+        stavke: p.stavke,
+        ukupanIznos: p.ukupan_iznos,
+        status: p.status,
+        datumKreiranja: p.datum_kreiranja
+      })));
+      setProjects((projectsRes.data || []).map((p: any) => ({
+        id: p.id,
+        clientId: p.client_id,
+        dealId: p.deal_id,
+        naziv: p.naziv,
+        status: p.status,
+        budzet: p.budzet,
+        rok: p.rok,
+        datumPocetka: p.datum_pocetka,
+        utrosenSati: p.utroseni_sati,
+        zadaci: []
+      })));
+      setSubscriptions((subscriptionsRes.data || []).map((s: any) => ({
+        id: s.id,
+        clientId: s.client_id,
+        nazivUsluge: s.naziv_usluge,
+        mjesecniIznos: s.mjesecni_iznos,
+        datumPocetka: s.datum_pocetka,
+        danNaplate: s.dan_naplate,
+        aktivna: s.aktivna
+      })));
+      setVaultEntries((vaultRes.data || []).map((v: any) => ({
+        id: v.id,
+        clientId: v.client_id,
+        tip: v.tip,
+        naziv: v.naziv,
+        vrijednost: v.vrijednost,
+        dodatneInformacije: v.dodatne_informacije
+      })));
+      setTickets((ticketsRes.data || []).map((t: any) => ({
+        id: t.id,
+        clientId: t.client_id,
+        opisProblema: t.opis_problema,
+        prioritet: t.prioritet,
+        status: t.status,
+        datumKreiranja: t.datum_kreiranja,
+        datumRjesavanja: t.datum_rjesavanja
+      })));
     } catch (error) {
       console.error("Error loading client data:", error);
       toast({
@@ -162,12 +231,12 @@ const ClientDetailNew = () => {
       return;
     }
 
-    const newInvoice: Omit<Invoice, "id"> = {
-      clientId: clientId!,
-      brojFakture: invoiceFormData.brojFakture,
+    const newInvoice = {
+      client_id: clientId!,
+      broj_fakture: invoiceFormData.brojFakture,
       iznos: parseFloat(invoiceFormData.iznos),
-      datumIzdavanja: invoiceFormData.datumIzdavanja,
-      rokPlacanja: invoiceFormData.rokPlacanja,
+      datum_izdavanja: invoiceFormData.datumIzdavanja,
+      rok_placanja: invoiceFormData.rokPlacanja,
       status: invoiceFormData.status,
     };
 
@@ -180,7 +249,15 @@ const ClientDetailNew = () => {
 
       if (error) throw error;
 
-      setInvoices([...invoices, data]);
+      setInvoices([...invoices, {
+        id: data.id,
+        clientId: data.client_id,
+        brojFakture: data.broj_fakture,
+        iznos: data.iznos,
+        datumIzdavanja: data.datum_izdavanja,
+        rokPlacanja: data.rok_placanja,
+        status: data.status
+      }]);
       setInvoiceFormData({
         brojFakture: "",
         iznos: "",
@@ -213,8 +290,8 @@ const ClientDetailNew = () => {
       return;
     }
 
-    const newTask: Omit<Task, "id"> = {
-      clientId: clientId!,
+    const newTask = {
+      client_id: clientId!,
       naziv: taskFormData.naziv,
       rok: taskFormData.rok,
       completed: false,
@@ -229,7 +306,13 @@ const ClientDetailNew = () => {
 
       if (error) throw error;
 
-      setTasks([...tasks, data]);
+      setTasks([...tasks, {
+        id: data.id,
+        clientId: data.client_id,
+        naziv: data.naziv,
+        rok: data.rok,
+        completed: data.completed
+      }]);
       setTaskFormData({ naziv: "", rok: new Date().toISOString().split("T")[0] });
       setOpenTaskDialog(false);
       toast({
@@ -312,13 +395,19 @@ const ClientDetailNew = () => {
 
       if (error) throw error;
 
-      setCommunications([...communications, data]);
+      setCommunications([...communications, {
+        id: data.id,
+        clientId: data.client_id,
+        datum: data.datum,
+        tip: data.tip,
+        sazetak: data.sazetak
+      }]);
 
       // Update client's last contact date
       if (client) {
         const { error: updateError } = await supabase
           .from("clients")
-          .update({ datumZadnjegKontakta: entry.datum })
+          .update({ datum_zadnjeg_kontakta: entry.datum })
           .eq("id", client.id);
 
         if (!updateError) {

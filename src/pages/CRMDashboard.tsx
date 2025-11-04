@@ -51,10 +51,38 @@ const CRMDashboard = () => {
       if (subscriptionsRes.error) throw subscriptionsRes.error;
 
       setClients(clientsRes.data || []);
-      setDeals(dealsRes.data || []);
-      setInvoices(invoicesRes.data || []);
-      setTasks(tasksRes.data || []);
-      setSubscriptions(subscriptionsRes.data || []);
+      setDeals((dealsRes.data || []).map((d: any) => ({
+        id: d.id,
+        clientId: d.client_id,
+        naziv: d.naziv,
+        vrijednost: d.vrijednost,
+        status: d.status
+      })));
+      setInvoices((invoicesRes.data || []).map((inv: any) => ({
+        id: inv.id,
+        clientId: inv.client_id,
+        brojFakture: inv.broj_fakture,
+        iznos: inv.iznos,
+        datumIzdavanja: inv.datum_izdavanja,
+        rokPlacanja: inv.rok_placanja,
+        status: inv.status
+      })));
+      setTasks((tasksRes.data || []).map((t: any) => ({
+        id: t.id,
+        clientId: t.client_id,
+        naziv: t.naziv,
+        rok: t.rok,
+        completed: t.completed
+      })));
+      setSubscriptions((subscriptionsRes.data || []).map((s: any) => ({
+        id: s.id,
+        clientId: s.client_id,
+        nazivUsluge: s.naziv_usluge,
+        mjesecniIznos: s.mjesecni_iznos,
+        datumPocetka: s.datum_pocetka,
+        danNaplate: s.dan_naplate,
+        aktivna: s.aktivna
+      })));
     } catch (error) {
       console.error("Error loading CRM data:", error);
       toast({

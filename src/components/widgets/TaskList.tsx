@@ -30,7 +30,7 @@ const TaskList = () => {
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
-        .is("clientId", null)
+        .is("client_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

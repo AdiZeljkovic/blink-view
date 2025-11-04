@@ -35,12 +35,12 @@ export const AdminSubscriptions = ({ clientId, subscriptions, onUpdate }: AdminS
   const addSubscription = async () => {
     if (!newSubscription.nazivUsluge || !newSubscription.mjesecniIznos || !supabase) return;
 
-    const subscription: Omit<Subscription, "id"> = {
-      clientId,
-      nazivUsluge: newSubscription.nazivUsluge,
-      mjesecniIznos: newSubscription.mjesecniIznos,
-      datumPocetka: new Date().toISOString().split("T")[0],
-      danNaplate: newSubscription.danNaplate || 1,
+    const subscription = {
+      client_id: clientId,
+      naziv_usluge: newSubscription.nazivUsluge,
+      mjesecni_iznos: newSubscription.mjesecniIznos,
+      datum_pocetka: new Date().toISOString().split("T")[0],
+      dan_naplate: newSubscription.danNaplate || 1,
       aktivna: true,
     };
 
@@ -53,7 +53,15 @@ export const AdminSubscriptions = ({ clientId, subscriptions, onUpdate }: AdminS
 
       if (error) throw error;
 
-      onUpdate([...subscriptions, data]);
+      onUpdate([...subscriptions, {
+        id: data.id,
+        clientId: data.client_id,
+        nazivUsluge: data.naziv_usluge,
+        mjesecniIznos: data.mjesecni_iznos,
+        datumPocetka: data.datum_pocetka,
+        danNaplate: data.dan_naplate,
+        aktivna: data.aktivna
+      }]);
       setNewSubscription({ nazivUsluge: "", mjesecniIznos: 0, danNaplate: 1, aktivna: true });
       toast({
         title: "Uspjeh",
