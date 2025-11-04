@@ -3,7 +3,7 @@ import { FileText, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface Note {
   id: string;
@@ -12,45 +12,61 @@ interface Note {
 }
 
 const NotesList = () => {
+  const { supabase } = useSupabase();
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   useEffect(() => {
-    // Load from storage (Supabase or localStorage)
-    const loadNotes = async () => {
-      try {
-        const savedNotes = await storage.getJSON<Note[]>("quick-notes-list");
-        if (savedNotes) {
-          setNotes(savedNotes);
-        }
-      } catch (error) {
-        console.error("Failed to load notes:", error);
-        toast.error("Greška pri učitavanju bilješki");
-      }
-    };
+    if (supabase) {
+      loadNotes();
+    }
 
-    loadNotes();
-
-    // Listen for storage changes (when new note is added from QuickNotes widget)
-    const handleStorageChange = () => {
+    // Listen for custom event when new note is added
+    const handleNotesUpdate = () => {
       loadNotes();
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    // Custom event for same-tab updates
-    window.addEventListener("notesUpdated", handleStorageChange);
+    window.addEventListener("notesUpdated", handleNotesUpdate);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("notesUpdated", handleStorageChange);
+      window.removeEventListener("notesUpdated", handleNotesUpdate);
     };
-  }, []);
+  }, [supabase]);
+
+  const loadNotes = async () => {
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("notes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setNotes((data || []).map((n: any) => ({
+        id: n.id,
+        content: n.sadrzaj,
+        createdAt: n.created_at,
+      })));
+    } catch (error) {
+      console.error("Failed to load notes:", error);
+      toast.error("Greška pri učitavanju bilješki");
+    }
+  };
 
   const deleteNote = async (id: string) => {
+    if (!supabase) return;
+
     try {
-      const updated = notes.filter(n => n.id !== id);
-      setNotes(updated);
-      await storage.setJSON("quick-notes-list", updated);
+      const { error } = await supabase
+        .from("notes")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setNotes(notes.filter(n => n.id !== id));
       setSelectedNote(null);
       toast.success("Bilješka obrisana");
       window.dispatchEvent(new Event("notesUpdated"));

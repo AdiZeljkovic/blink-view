@@ -50,42 +50,7 @@ class StorageManager {
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    // Try Supabase first if configured
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = getSupabaseClient();
-        if (supabase) {
-          console.log(`[Storage] Attempting to save to Supabase: ${key}`);
-          
-          const { data, error } = await supabase
-            .from('app_storage')
-            .upsert(
-              { key, value, updated_at: new Date().toISOString() },
-              { onConflict: 'key' }
-            )
-            .select();
-          
-          if (!error) {
-            console.log(`[Storage] ✓ Successfully saved to Supabase: ${key}`, data);
-            
-            // Also save to localStorage as backup
-            if (this.storageType === 'localStorage') {
-              localStorage.setItem(key, value);
-              console.log(`[Storage] ✓ Backup saved to localStorage: ${key}`);
-            }
-            return;
-          } else {
-            console.error(`[Storage] ✗ Supabase save failed for ${key}:`, error);
-            throw error; // Don't silently fail
-          }
-        }
-      } catch (e: any) {
-        console.error(`[Storage] ✗ Supabase error for ${key}:`, e);
-        throw new Error(`Failed to save to Supabase: ${e.message}`);
-      }
-    }
-
-    // Fallback to localStorage/sessionStorage/memory only if Supabase is not configured
+    // Only use browser storage now (Supabase-based storage removed)
     console.log(`[Storage] Saving to browser storage: ${key}`);
     try {
       if (this.storageType === 'localStorage') {
@@ -105,37 +70,7 @@ class StorageManager {
   }
 
   async getItem(key: string): Promise<string | null> {
-    // Try Supabase first if configured
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = getSupabaseClient();
-        if (supabase) {
-          console.log(`[Storage] Attempting to read from Supabase: ${key}`);
-          
-          const { data, error } = await supabase
-            .from('app_storage')
-            .select('value')
-            .eq('key', key)
-            .maybeSingle();
-          
-          if (!error && data) {
-            console.log(`[Storage] ✓ Successfully retrieved from Supabase: ${key}`);
-            return data.value;
-          } else if (error) {
-            console.error(`[Storage] ✗ Supabase read failed for ${key}:`, error);
-            throw error;
-          } else {
-            console.log(`[Storage] Key not found in Supabase: ${key}`);
-            return null;
-          }
-        }
-      } catch (e: any) {
-        console.error(`[Storage] ✗ Supabase error for ${key}:`, e);
-        throw new Error(`Failed to read from Supabase: ${e.message}`);
-      }
-    }
-
-    // Fallback to localStorage/sessionStorage/memory only if Supabase is not configured
+    // Only use browser storage now (Supabase-based storage removed)
     console.log(`[Storage] Reading from browser storage: ${key}`);
     try {
       if (this.storageType === 'localStorage') {

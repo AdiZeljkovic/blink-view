@@ -29,7 +29,7 @@ const CommunicationLog = ({ clientId, entries, onAddEntry }: CommunicationLogPro
     if (!formData.sazetak) return;
     
     onAddEntry({
-      clientId,
+      clientId: clientId,
       datum: formData.datum,
       tip: formData.tip,
       sazetak: formData.sazetak,

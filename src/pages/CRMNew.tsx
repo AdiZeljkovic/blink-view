@@ -57,7 +57,14 @@ const CRMNew = () => {
           .order('created_at', { ascending: false });
 
         if (dealsError) throw dealsError;
-        setDeals(dealsData || []);
+        // Map snake_case to camelCase
+        setDeals((dealsData || []).map((d: any) => ({
+          id: d.id,
+          clientId: d.client_id,
+          naziv: d.naziv,
+          vrijednost: d.vrijednost,
+          status: d.status,
+        })));
       } catch (error) {
         console.error("Error loading CRM data:", error);
         toast({
@@ -158,7 +165,16 @@ const CRMNew = () => {
 
       if (error) throw error;
 
-      setDeals([data, ...deals]);
+      // Map snake_case to camelCase
+      const mappedDeal: Deal = {
+        id: data.id,
+        clientId: data.client_id,
+        naziv: data.naziv,
+        vrijednost: data.vrijednost,
+        status: data.status,
+      };
+
+      setDeals([mappedDeal, ...deals]);
       setDealFormData({
         clientId: "",
         naziv: "",
@@ -331,9 +347,9 @@ const CRMNew = () => {
                             <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-sm truncate">{deal.naziv}</h4>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {getClientName(deal.clientId)}
-                              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {getClientName(deal.clientId)}
+              </p>
                               <p className="text-sm font-bold text-primary mt-1">
                                 {deal.vrijednost.toFixed(2)} KM
                               </p>

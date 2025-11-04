@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { storage } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
+import { useSupabase } from "@/hooks/useSupabase";
 import { ArrowLeft, Plus, FileText } from "lucide-react";
 import type { Client, Invoice } from "@/types/crm";
 
 const ClientDetail = () => {
+  const { supabase } = useSupabase();
   const { clientId } = useParams();
   const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
@@ -30,31 +31,67 @@ const ClientDetail = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const clients = await storage.getJSON<Client[]>("crm-clients");
-        const foundClient = clients?.find((c) => c.id === clientId);
-        if (foundClient) {
-          setClient(foundClient);
-        } else {
-          navigate("/crm");
-        }
+    if (supabase && clientId) {
+      loadData();
+    }
+  }, [supabase, clientId]);
 
-        const allInvoices = await storage.getJSON<Invoice[]>("crm-invoices") || [];
-        setInvoices(allInvoices.filter((inv) => inv.clientId === clientId));
-      } catch (error) {
-        console.error("Error loading data:", error);
+  const loadData = async () => {
+    if (!supabase || !clientId) return;
+
+    try {
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", clientId)
+        .maybeSingle();
+
+      if (clientError) throw clientError;
+      
+      if (clientData) {
+        setClient(clientData);
+      } else {
+        navigate("/crm");
       }
-    };
-    loadData();
-  }, [clientId, navigate]);
+
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from("invoices")
+        .select("*")
+        .eq("client_id", clientId);
+
+      if (invoicesError) throw invoicesError;
+
+      setInvoices((invoicesData || []).map((inv: any) => ({
+        id: inv.id,
+        clientId: inv.client_id,
+        brojFakture: inv.broj_fakture,
+        iznos: inv.iznos,
+        datumIzdavanja: inv.datum_izdavanja,
+        rokPlacanja: inv.rok_placanja,
+        status: inv.status,
+      })));
+    } catch (error) {
+      console.error("Error loading data:", error);
+    }
+  };
 
   const saveClient = async () => {
-    if (!client) return;
+    if (!client || !supabase) return;
     try {
-      const clients = await storage.getJSON<Client[]>("crm-clients") || [];
-      const updated = clients.map((c) => (c.id === client.id ? client : c));
-      await storage.setJSON("crm-clients", updated);
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          ime: client.ime,
+          kompanija: client.kompanija,
+          email: client.email,
+          telefon: client.telefon,
+          adresa: client.adresa,
+          biljeske: client.biljeske,
+        })
+        .eq("id", client.id);
+
+      if (error) throw error;
+
       setEditMode(false);
       toast({ title: "Uspjeh", description: "Podaci klijenta su ažurirani" });
     } catch (error) {
@@ -63,25 +100,37 @@ const ClientDetail = () => {
   };
 
   const addInvoice = async () => {
-    if (!formData.brojFakture || !formData.iznos) {
+    if (!formData.brojFakture || !formData.iznos || !supabase || !clientId) {
       toast({ title: "Upozorenje", description: "Popunite sva polja", variant: "destructive" });
       return;
     }
 
-    const newInvoice: Invoice = {
-      id: Date.now().toString(),
-      clientId: clientId!,
-      brojFakture: formData.brojFakture,
-      iznos: parseFloat(formData.iznos),
-      datumIzdavanja: formData.datumIzdavanja,
-      rokPlacanja: formData.rokPlacanja,
-      status: formData.status,
-    };
-
     try {
-      const allInvoices = await storage.getJSON<Invoice[]>("crm-invoices") || [];
-      const updated = [...allInvoices, newInvoice];
-      await storage.setJSON("crm-invoices", updated);
+      const { data, error } = await supabase
+        .from("invoices")
+        .insert([{
+          client_id: clientId,
+          broj_fakture: formData.brojFakture,
+          iznos: parseFloat(formData.iznos),
+          datum_izdavanja: formData.datumIzdavanja,
+          rok_placanja: formData.rokPlacanja,
+          status: formData.status,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newInvoice: Invoice = {
+        id: data.id,
+        clientId: data.client_id,
+        brojFakture: data.broj_fakture,
+        iznos: data.iznos,
+        datumIzdavanja: data.datum_izdavanja,
+        rokPlacanja: data.rok_placanja,
+        status: data.status,
+      };
+
       setInvoices([...invoices, newInvoice]);
       setFormData({
         brojFakture: "",

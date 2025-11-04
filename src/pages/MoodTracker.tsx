@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 import { useToast } from "@/hooks/use-toast";
 
 interface MoodEntry {
@@ -18,6 +18,7 @@ const MOODS = [
 ];
 
 const MoodTracker = () => {
+  const { supabase } = useSupabase();
   const [entries, setEntries] = useState<MoodEntry[]>([]);
   const [todayMood, setTodayMood] = useState<string | null>(null);
   const { toast } = useToast();
@@ -25,38 +26,55 @@ const MoodTracker = () => {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    const loadEntries = async () => {
-      try {
-        const saved = await storage.getJSON<MoodEntry[]>("mood-entries");
-        if (saved) {
-          setEntries(saved);
-          const todayEntry = saved.find((e) => e.datum === today);
-          if (todayEntry) setTodayMood(todayEntry.mood);
-        }
-      } catch (error) {
-        console.error("Error loading mood entries:", error);
-      }
-    };
-    loadEntries();
-  }, [today]);
+    if (supabase) {
+      loadEntries();
+    }
+  }, [supabase]);
 
-  const saveMood = async (moodValue: string, emoji: string) => {
-    const newEntry: MoodEntry = {
-      datum: today,
-      mood: moodValue,
-      emoji,
-    };
-
-    const filtered = entries.filter((e) => e.datum !== today);
-    const updated = [newEntry, ...filtered].sort(
-      (a, b) => new Date(b.datum).getTime() - new Date(a.datum).getTime()
-    );
-
-    setEntries(updated);
-    setTodayMood(moodValue);
+  const loadEntries = async () => {
+    if (!supabase) return;
 
     try {
-      await storage.setJSON("mood-entries", updated);
+      const { data, error } = await supabase
+        .from("mood_entries")
+        .select("*")
+        .order("datum", { ascending: false });
+
+      if (error) throw error;
+
+      const mapped = (data || []).map((e: any) => ({
+        datum: e.datum,
+        mood: e.mood,
+        emoji: e.emoji,
+      }));
+      
+      setEntries(mapped);
+      const todayEntry = mapped.find((e: MoodEntry) => e.datum === today);
+      if (todayEntry) setTodayMood(todayEntry.mood);
+    } catch (error) {
+      console.error("Error loading mood entries:", error);
+    }
+  };
+
+  const saveMood = async (moodValue: string, emoji: string) => {
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("mood_entries")
+        .upsert(
+          {
+            datum: today,
+            mood: moodValue,
+            emoji: emoji,
+          },
+          { onConflict: 'datum' }
+        );
+
+      if (error) throw error;
+
+      setTodayMood(moodValue);
+      loadEntries();
       toast({
         title: "Uspjeh",
         description: "Raspoloženje je zabilježeno",

@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { storage } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
+import { useSupabase } from "@/hooks/useSupabase";
 import { Plus, User, Mail, Phone, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Client } from "@/types/crm";
 
 const CRM = () => {
+  const { supabase } = useSupabase();
   const [clients, setClients] = useState<Client[]>([]);
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<Omit<Client, "id">>({
@@ -26,28 +27,24 @@ const CRM = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadClients = async () => {
-      try {
-        const saved = await storage.getJSON<Client[]>("crm-clients");
-        if (saved) setClients(saved);
-      } catch (error) {
-        console.error("Error loading clients:", error);
-      }
-    };
-    loadClients();
-  }, []);
+    if (supabase) {
+      loadClients();
+    }
+  }, [supabase]);
 
-  const saveClients = async (newClients: Client[]) => {
-    setClients(newClients);
+  const loadClients = async () => {
+    if (!supabase) return;
+
     try {
-      await storage.setJSON("crm-clients", newClients);
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setClients(data || []);
     } catch (error) {
-      console.error("Error saving clients:", error);
-      toast({
-        title: "Greška",
-        description: "Nije moguće sačuvati klijenta",
-        variant: "destructive",
-      });
+      console.error("Error loading clients:", error);
     }
   };
 
@@ -61,25 +58,46 @@ const CRM = () => {
       return;
     }
 
-    const newClient: Client = {
-      id: Date.now().toString(),
-      ...formData,
-    };
+    if (!supabase) {
+      toast({
+        title: "Greška",
+        description: "Supabase nije konfigurisan",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    await saveClients([...clients, newClient]);
-    setFormData({
-      ime: "",
-      kompanija: "",
-      email: "",
-      telefon: "",
-      adresa: "",
-      biljeske: "",
-    });
-    setOpen(false);
-    toast({
-      title: "Uspjeh",
-      description: "Klijent je dodan",
-    });
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .insert([formData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setClients([data, ...clients]);
+      setFormData({
+        ime: "",
+        kompanija: "",
+        email: "",
+        telefon: "",
+        adresa: "",
+        biljeske: "",
+      });
+      setOpen(false);
+      toast({
+        title: "Uspjeh",
+        description: "Klijent je dodan",
+      });
+    } catch (error) {
+      console.error("Error adding client:", error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće dodati klijenta",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { storage } from "@/lib/storage";
+import { useSupabase } from "@/hooks/useSupabase";
 import { Calendar, Briefcase, CheckSquare, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -16,85 +16,76 @@ interface AggregatedTask {
 }
 
 const MyDayWidget = () => {
+  const { supabase } = useSupabase();
   const [tasks, setTasks] = useState<AggregatedTask[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    loadAllTasks();
-  }, []);
+    if (supabase) {
+      loadAllTasks();
+    }
+  }, [supabase]);
 
   const loadAllTasks = async () => {
+    if (!supabase) return;
+
     const today = new Date().toISOString().split("T")[0];
     const allTasks: AggregatedTask[] = [];
 
     try {
       // Calendar events
-      const calendarEvents = await storage.getJSON<any[]>("calendar-events") || [];
-      calendarEvents
-        .filter(e => e.date === today)
-        .forEach(e => allTasks.push({
-          id: `cal-${e.id}`,
-          naziv: e.title,
-          source: "calendar",
-          completed: false,
-        }));
+      const { data: calendarEvents } = await supabase
+        .from("calendar_events")
+        .select("*")
+        .eq("datum", today);
+
+      (calendarEvents || []).forEach(e => allTasks.push({
+        id: `cal-${e.id}`,
+        naziv: e.naslov,
+        source: "calendar",
+        completed: false,
+      }));
 
       // CRM tasks
-      const crmTasks = await storage.getJSON<any[]>("crm-tasks") || [];
-      const clients = await storage.getJSON<any[]>("crm-clients") || [];
-      crmTasks
-        .filter(t => t.rok === today && !t.completed)
-        .forEach(t => {
-          const client = clients.find(c => c.id === t.clientId);
-          allTasks.push({
-            id: `crm-${t.id}`,
-            naziv: t.naziv,
-            source: "crm",
-            completed: t.completed,
-            clientName: client?.ime,
-          });
-        });
+      const { data: crmTasks } = await supabase
+        .from("tasks")
+        .select("*, clients(ime)")
+        .eq("rok", today)
+        .not("completed", "eq", true);
 
-      // Project tasks
-      const projects = await storage.getJSON<any[]>("crm-projects") || [];
-      projects.forEach(project => {
-        project.zadaci
-          ?.filter((z: any) => z.rok === today && !z.completed)
-          .forEach((z: any) => allTasks.push({
-            id: `proj-${z.id}`,
-            naziv: `${project.naziv}: ${z.naziv}`,
-            source: "project",
-            completed: z.completed,
-          }));
+      (crmTasks || []).forEach((t: any) => {
+        allTasks.push({
+          id: `crm-${t.id}`,
+          naziv: t.naziv,
+          source: "crm",
+          completed: t.completed,
+          clientName: t.clients?.ime,
+        });
       });
 
-      // Habit tracker
-      const habits = await storage.getJSON<any[]>("habits") || [];
-      const habitCompletions = await storage.getJSON<any[]>("habit-completions") || [];
-      habits.forEach(habit => {
-        const completedToday = habitCompletions.some(
-          c => c.habitId === habit.id && c.date === today
+      // Habits
+      const { data: habits } = await supabase
+        .from("habits")
+        .select("*");
+
+      const { data: habitCompletions } = await supabase
+        .from("habit_completions")
+        .select("*")
+        .eq("datum", today);
+
+      (habits || []).forEach((habit: any) => {
+        const completedToday = (habitCompletions || []).some(
+          (c: any) => c.habit_id === habit.id
         );
         if (!completedToday) {
           allTasks.push({
             id: `habit-${habit.id}`,
-            naziv: habit.name,
+            naziv: habit.naziv,
             source: "habit",
             completed: false,
           });
         }
       });
-
-      // Manual tasks
-      const manualTasks = await storage.getJSON<any[]>("tasks") || [];
-      manualTasks
-        .filter(t => !t.completed)
-        .forEach(t => allTasks.push({
-          id: `manual-${t.id}`,
-          naziv: t.text,
-          source: "manual",
-          completed: t.completed,
-        }));
 
       setTasks(allTasks);
     } catch (error) {
