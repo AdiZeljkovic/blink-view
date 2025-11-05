@@ -79,6 +79,7 @@ const Finance = () => {
       iznos: parseFloat(iznos),
       tip,
       datum,
+      kategorija: "Ostalo"
     };
 
     try {

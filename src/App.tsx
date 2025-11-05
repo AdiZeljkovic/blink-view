@@ -10,7 +10,6 @@ import Tech from "./pages/Tech";
 import Vijesti from "./pages/Vijesti";
 import Kalendar from "./pages/KalendarNew";
 import Boards from "./pages/Boards";
-import Bookmarks from "./pages/Bookmarks";
 import Finance from "./pages/Finance";
 import CRMDashboard from "./pages/CRMDashboard";
 import CRMClients from "./pages/CRMNew";
@@ -40,7 +39,6 @@ const App = () => (
             <Route path="/vijesti" element={<Vijesti />} />
             <Route path="/kalendar" element={<Kalendar />} />
             <Route path="/boards" element={<Boards />} />
-            <Route path="/bookmarks" element={<Bookmarks />} />
             <Route path="/finance" element={<Finance />} />
             <Route path="/crm" element={<CRMDashboard />} />
             <Route path="/crm/clients" element={<CRMClients />} />

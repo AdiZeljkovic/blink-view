@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Shield, LogOut, Users, DollarSign, Activity, TrendingUp } from "lucide-react";
 import AdminHomeWidgets from "@/components/admin/AdminHomeWidgets";
-import AdminBookmarks from "@/components/admin/AdminBookmarks";
 import AdminBoards from "@/components/admin/AdminBoards";
 import AdminGaming from "@/components/admin/AdminGaming";
 import AdminTech from "@/components/admin/AdminTech";
@@ -50,7 +49,6 @@ const AdminNew = () => {
     { id: "tech", label: "Tech" },
     { id: "vijesti", label: "Vijesti" },
     { id: "kalendar", label: "Kalendar" },
-    { id: "bookmarks", label: "Bookmarks" },
     { id: "boards", label: "Boards" },
     { id: "settings", label: "Postavke" },
   ];
@@ -132,7 +130,6 @@ const AdminNew = () => {
               {activeTab === "tech" && <AdminTech />}
               {activeTab === "vijesti" && <AdminVijesti />}
               {activeTab === "kalendar" && <AdminKalendar />}
-              {activeTab === "bookmarks" && <AdminBookmarks />}
               {activeTab === "boards" && <AdminBoards />}
               {activeTab === "settings" && <AdminSettings />}
             </div>

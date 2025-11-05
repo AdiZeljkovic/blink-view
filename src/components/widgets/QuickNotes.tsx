@@ -33,8 +33,7 @@ const QuickNotes = () => {
       const { error } = await supabase
         .from("notes")
         .insert([{
-          content: note,
-          createdAt: new Date().toISOString()
+          sadrzaj: note
         }]);
 
       if (error) throw error;

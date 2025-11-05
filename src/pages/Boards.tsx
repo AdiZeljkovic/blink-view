@@ -26,12 +26,7 @@ interface Column {
   color: string;
 }
 
-const defaultColumns: Column[] = [
-  { id: "todo", title: "Za Uraditi", color: "hsl(0, 0%, 60%)" },
-  { id: "in-progress", title: "U Toku", color: "hsl(221, 100%, 50%)" },
-  { id: "review", title: "Pregled", color: "hsl(45, 100%, 50%)" },
-  { id: "done", title: "Završeno", color: "hsl(142, 76%, 36%)" },
-];
+const defaultColumns: Column[] = [];
 
 const priorityColors = {
   low: "hsl(142, 76%, 36%)",
@@ -41,12 +36,12 @@ const priorityColors = {
 
 const Boards = () => {
   const { supabase } = useSupabase();
-  const [columns, setColumns] = useState<Column[]>(defaultColumns);
+  const [columns, setColumns] = useState<Column[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedColumn, setSelectedColumn] = useState<string>("todo");
+  const [selectedColumn, setSelectedColumn] = useState<string>("");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState({
     title: "",
@@ -74,11 +69,15 @@ const Boards = () => {
       if (boardsError) throw boardsError;
       
       if (boardsData && boardsData.length > 0) {
-        setColumns(boardsData.map((b: any) => ({
+        const mappedColumns = boardsData.map((b: any) => ({
           id: b.id,
           title: b.naziv,
           color: b.boja
-        })));
+        }));
+        setColumns(mappedColumns);
+        if (mappedColumns.length > 0 && !selectedColumn) {
+          setSelectedColumn(mappedColumns[0].id);
+        }
       }
       
       // Load tasks from cards table

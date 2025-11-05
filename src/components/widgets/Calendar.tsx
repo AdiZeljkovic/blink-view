@@ -6,11 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 
 interface CalendarEvent {
   id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  color: string;
+  naslov: string;
+  opis: string;
+  datum: string;
+  vrijeme: string;
+  boja: string;
 }
 
 const Calendar = () => {
@@ -35,8 +35,8 @@ const Calendar = () => {
       const { data, error } = await supabase
         .from("calendar_events")
         .select("*")
-        .order("date", { ascending: true })
-        .order("time", { ascending: true });
+        .order("datum", { ascending: true })
+        .order("vrijeme", { ascending: true });
 
       if (error) throw error;
 
@@ -52,8 +52,8 @@ const Calendar = () => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = format(tomorrow, "yyyy-MM-dd");
 
-  const todayEvents = events.filter(e => e.date === todayStr).sort((a, b) => a.time.localeCompare(b.time));
-  const tomorrowEvents = events.filter(e => e.date === tomorrowStr).sort((a, b) => a.time.localeCompare(b.time));
+  const todayEvents = events.filter(e => e.datum === todayStr).sort((a, b) => a.vrijeme.localeCompare(b.vrijeme));
+  const tomorrowEvents = events.filter(e => e.datum === tomorrowStr).sort((a, b) => a.vrijeme.localeCompare(b.vrijeme));
 
   const todayDate = today.toLocaleDateString("bs-BA", { 
     weekday: "long", 
@@ -79,15 +79,15 @@ const Calendar = () => {
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <span className="text-xs font-bold text-primary w-11 shrink-0 pt-0.5 group-hover:glow-primary transition-all duration-300">
-                {event.time}
+                {event.vrijeme}
               </span>
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-foreground leading-relaxed group-hover:text-primary transition-colors duration-300">
-                  {event.title}
+                  {event.naslov}
                 </div>
-                {event.description && (
+                {event.opis && (
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                    {event.description}
+                    {event.opis}
                   </p>
                 )}
               </div>

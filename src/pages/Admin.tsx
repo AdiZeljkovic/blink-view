@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Shield, LogOut, Home, Bookmark, Calendar, CheckSquare, Server, Settings } from "lucide-react";
+import { Shield, LogOut, Home, Calendar, CheckSquare, Server, Settings } from "lucide-react";
 import AdminHomeWidgets from "@/components/admin/AdminHomeWidgets";
-import AdminBookmarks from "@/components/admin/AdminBookmarks";
 import AdminBoards from "@/components/admin/AdminBoards";
 import AdminGaming from "@/components/admin/AdminGaming";
 import AdminTech from "@/components/admin/AdminTech";
@@ -59,7 +58,7 @@ const Admin = () => {
         </Card>
 
         <Tabs defaultValue="home" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 h-auto flex-wrap">
+          <TabsList className="grid w-full grid-cols-7 h-auto flex-wrap">
             <TabsTrigger value="home" className="gap-2">
               <Home className="w-4 h-4" />
               Početna
@@ -79,10 +78,6 @@ const Admin = () => {
             <TabsTrigger value="kalendar" className="gap-2">
               <Calendar className="w-4 h-4" />
               Kalendar
-            </TabsTrigger>
-            <TabsTrigger value="bookmarks" className="gap-2">
-              <Bookmark className="w-4 h-4" />
-              Bookmarks
             </TabsTrigger>
             <TabsTrigger value="boards" className="gap-2">
               <CheckSquare className="w-4 h-4" />
@@ -112,10 +107,6 @@ const Admin = () => {
 
           <TabsContent value="kalendar">
             <AdminKalendar />
-          </TabsContent>
-
-          <TabsContent value="bookmarks">
-            <AdminBookmarks />
           </TabsContent>
 
           <TabsContent value="boards">
