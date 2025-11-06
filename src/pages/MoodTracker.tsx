@@ -68,7 +68,7 @@ const MoodTracker = () => {
             mood: moodValue,
             emoji: emoji,
           },
-          { onConflict: 'datum' }
+          { onConflict: 'datum,user_id' }
         );
 
       if (error) throw error;

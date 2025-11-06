@@ -98,7 +98,14 @@ const AdminKalendar = () => {
       if (field === "title") updateData.naslov = value;
       else if (field === "datum") updateData.datum = value;
       else if (field === "vrijeme") updateData.vrijeme = value;
-      else if (field === "description") updateData.tip = value;
+      else if (field === "description") {
+        // Validate tip values
+        if (value && !['zadatak', 'dogadjaj', 'podsjetnik'].includes(value)) {
+          toast.error("Tip mora biti: zadatak, dogadjaj ili podsjetnik");
+          return;
+        }
+        updateData.tip = value;
+      }
       else if (field === "color") updateData.boja = value;
 
       const { error } = await supabase
@@ -212,13 +219,16 @@ const AdminKalendar = () => {
                 </div>
               </div>
               <div>
-                <Label>Opis</Label>
-                <Textarea
+                <Label>Tip</Label>
+                <select
                   value={event.description}
                   onChange={(e) => updateEvent(event.id, "description", e.target.value)}
-                  placeholder="Detalji događaja..."
-                  rows={2}
-                />
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="dogadjaj">Događaj</option>
+                  <option value="zadatak">Zadatak</option>
+                  <option value="podsjetnik">Podsjetnik</option>
+                </select>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">

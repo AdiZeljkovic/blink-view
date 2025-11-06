@@ -29,6 +29,7 @@ const KalendarNew = () => {
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
+    tip: "dogadjaj" as "zadatak" | "dogadjaj" | "podsjetnik",
     time: "12:00"
   });
 
@@ -79,7 +80,8 @@ const KalendarNew = () => {
           naslov: newEvent.title,
           datum: format(selectedDate, "yyyy-MM-dd"),
           vrijeme: newEvent.time,
-          tip: newEvent.description || "dogadjaj"
+          tip: newEvent.tip,
+          opis: newEvent.description
         }])
         .select()
         .single();
@@ -96,7 +98,7 @@ const KalendarNew = () => {
       };
 
       setEvents([...events, newEventObj]);
-      setNewEvent({ title: "", description: "", time: "12:00" });
+      setNewEvent({ title: "", description: "", tip: "dogadjaj", time: "12:00" });
       setIsDialogOpen(false);
       toast.success("Događaj dodan");
     } catch (error) {
@@ -288,6 +290,19 @@ const KalendarNew = () => {
                 value={newEvent.title}
                 onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tip">Tip Događaja</Label>
+              <select
+                id="tip"
+                value={newEvent.tip}
+                onChange={(e) => setNewEvent({ ...newEvent, tip: e.target.value as "zadatak" | "dogadjaj" | "podsjetnik" })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="dogadjaj">Događaj</option>
+                <option value="zadatak">Zadatak</option>
+                <option value="podsjetnik">Podsjetnik</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="time">Vrijeme (HH:MM)</Label>
