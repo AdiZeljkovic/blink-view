@@ -389,7 +389,12 @@ const ClientDetailNew = () => {
     try {
       const { data, error } = await supabase
         .from("communication_entries")
-        .insert([entry])
+        .insert([{
+          client_id: entry.clientId,
+          datum: entry.datum,
+          tip: entry.tip,
+          sazetak: entry.sazetak
+        }])
         .select()
         .single();
 
