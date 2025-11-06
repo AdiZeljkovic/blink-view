@@ -13,8 +13,8 @@ interface Event {
   id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
+  datum: string;
+  vrijeme: string;
   color: string;
 }
 
@@ -48,8 +48,8 @@ const AdminKalendar = () => {
           id: e.id,
           title: e.naslov,
           description: e.tip || "",
-          date: e.datum,
-          time: e.vrijeme || "00:00",
+          datum: e.datum,
+          vrijeme: e.vrijeme || "00:00",
           color: `hsl(${Math.random() * 360}, 70%, 50%)`
         })));
       }
@@ -79,8 +79,8 @@ const AdminKalendar = () => {
         id: data.id,
         title: data.naslov,
         description: data.tip || "",
-        date: data.datum,
-        time: data.vrijeme,
+        datum: data.datum,
+        vrijeme: data.vrijeme,
         color: `hsl(${Math.random() * 360}, 70%, 50%)`
       }]);
       toast.success("Događaj dodan");
@@ -96,9 +96,10 @@ const AdminKalendar = () => {
     try {
       const updateData: any = {};
       if (field === "title") updateData.naslov = value;
-      else if (field === "date") updateData.datum = value;
-      else if (field === "time") updateData.vrijeme = value;
+      else if (field === "datum") updateData.datum = value;
+      else if (field === "vrijeme") updateData.vrijeme = value;
       else if (field === "description") updateData.tip = value;
+      else if (field === "color") updateData.boja = value;
 
       const { error } = await supabase
         .from("calendar_events")
@@ -173,7 +174,7 @@ const AdminKalendar = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {events
-            .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+            .sort((a, b) => `${a.datum} ${a.vrijeme}`.localeCompare(`${b.datum} ${b.vrijeme}`))
             .map((event) => (
             <div key={event.id} className="border rounded-lg p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -189,16 +190,16 @@ const AdminKalendar = () => {
                   <Label>Datum</Label>
                   <Input
                     type="date"
-                    value={event.date}
-                    onChange={(e) => updateEvent(event.id, "date", e.target.value)}
+                    value={event.datum}
+                    onChange={(e) => updateEvent(event.id, "datum", e.target.value)}
                   />
                 </div>
                 <div>
                   <Label>Vrijeme</Label>
                   <Input
                     type="time"
-                    value={event.time}
-                    onChange={(e) => updateEvent(event.id, "time", e.target.value)}
+                    value={event.vrijeme}
+                    onChange={(e) => updateEvent(event.id, "vrijeme", e.target.value)}
                   />
                 </div>
                 <div>
@@ -221,7 +222,7 @@ const AdminKalendar = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">
-                  {format(new Date(event.date), "dd.MM.yyyy")} u {event.time}
+                  {format(new Date(event.datum), "dd.MM.yyyy")} u {event.vrijeme}
                 </span>
                 <Button
                   onClick={() => deleteEvent(event.id)}

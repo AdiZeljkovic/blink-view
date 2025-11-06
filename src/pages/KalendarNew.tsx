@@ -16,8 +16,8 @@ interface Event {
   id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
+  datum: string;
+  vrijeme: string;
   color: string;
 }
 
@@ -54,8 +54,8 @@ const KalendarNew = () => {
           id: e.id,
           title: e.naslov,
           description: e.tip || "",
-          date: e.datum,
-          time: e.vrijeme || "00:00",
+          datum: e.datum,
+          vrijeme: e.vrijeme || "00:00",
           color: `hsl(${Math.random() * 360}, 70%, 50%)`
         })));
       }
@@ -90,8 +90,8 @@ const KalendarNew = () => {
         id: data.id,
         title: data.naslov,
         description: data.tip || "",
-        date: data.datum,
-        time: data.vrijeme,
+        datum: data.datum,
+        vrijeme: data.vrijeme,
         color: `hsl(${Math.random() * 360}, 70%, 50%)`
       };
 
@@ -126,14 +126,14 @@ const KalendarNew = () => {
 
   const getEventsForDate = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return events.filter(e => e.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
+    return events.filter(e => e.datum === dateStr).sort((a, b) => a.vrijeme.localeCompare(b.vrijeme));
   };
 
   const getUpcomingEvents = () => {
     const today = format(new Date(), "yyyy-MM-dd");
     return events
-      .filter(e => e.date >= today)
-      .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+      .filter(e => e.datum >= today)
+      .sort((a, b) => `${a.datum} ${a.vrijeme}`.localeCompare(`${b.datum} ${b.vrijeme}`))
       .slice(0, 10);
   };
 
@@ -209,7 +209,7 @@ const KalendarNew = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-bold text-primary">{event.time}</span>
+                            <span className="text-sm font-bold text-primary">{event.vrijeme}</span>
                             <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
                               {event.title}
                             </h3>
@@ -248,7 +248,7 @@ const KalendarNew = () => {
                       key={event.id}
                       className="group p-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-glow-sm transition-all duration-300 cursor-pointer animate-fade-in"
                       style={{ animationDelay: `${index * 50}ms` }}
-                      onClick={() => setSelectedDate(new Date(event.date))}
+                      onClick={() => setSelectedDate(new Date(event.datum))}
                     >
                       <div className="flex items-center gap-2">
                         <div 
@@ -257,7 +257,7 @@ const KalendarNew = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(event.date), "dd.MM.yyyy")} • {event.time}
+                            {format(new Date(event.datum), "dd.MM.yyyy")} • {event.vrijeme}
                           </p>
                           <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
                             {event.title}

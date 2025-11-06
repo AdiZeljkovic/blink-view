@@ -13,7 +13,6 @@ const Header = () => {
     { label: "Dashboard", path: "/" },
     { label: "Kalendar", path: "/kalendar" },
     { label: "Boards", path: "/boards" },
-    { label: "Bookmarks", path: "/bookmarks" },
     { label: "Finansije", path: "/finance" },
     { label: "CRM", path: "/crm" },
     { label: "Fokus Timer", path: "/focus-timer" },
