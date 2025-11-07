@@ -24,7 +24,12 @@ const Vaktija = () => {
   useEffect(() => {
     const fetchVaktija = async () => {
       try {
-        const response = await fetch("https://api.vaktija.ba/v1");
+        const apiKey = localStorage.getItem("vaktija_api_key");
+        const url = apiKey 
+          ? `https://api.vaktija.ba/v1?apiKey=${apiKey}` 
+          : "https://api.vaktija.ba/v1";
+        
+        const response = await fetch(url);
         if (!response.ok) throw new Error("Failed to fetch vaktija");
         const data = await response.json();
         setVaktija(data);

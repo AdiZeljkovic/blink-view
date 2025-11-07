@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { bs } from "date-fns/locale";
 import { toast } from "sonner";
 import { useSupabase } from "@/hooks/useSupabase";
+import TaskList from "@/components/widgets/TaskList";
 
 interface Event {
   id: string;
@@ -235,12 +236,12 @@ const KalendarNew = () => {
             </div>
           </div>
 
-          {/* Right - Upcoming Events */}
-          <div className="lg:col-span-1">
-            <div className="glass-card p-6 rounded-2xl border border-border shadow-lg animate-scale-in h-full">
+          {/* Right - Upcoming Events & Tasks */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="glass-card p-6 rounded-2xl border border-border shadow-lg animate-scale-in">
               <h2 className="text-lg font-display font-semibold mb-4">Nadolazeći Događaji</h2>
               
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                 {upcomingEvents.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">Nema nadolazećih događaja</p>
                 ) : (
@@ -270,6 +271,8 @@ const KalendarNew = () => {
                 )}
               </div>
             </div>
+
+            <TaskList />
           </div>
         </div>
       </div>

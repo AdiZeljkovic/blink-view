@@ -15,15 +15,23 @@ const AdminSettings = () => {
   const [supabaseUrl, setSupabaseUrl] = useState("");
   const [supabaseKey, setSupabaseKey] = useState("");
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
+  
+  // Vaktija API Key
+  const [vaktijaApiKey, setVaktijaApiKey] = useState("");
 
   useEffect(() => {
     const savedUrl = localStorage.getItem("custom_supabase_url");
     const savedKey = localStorage.getItem("custom_supabase_key");
+    const savedVaktijaKey = localStorage.getItem("vaktija_api_key");
     
     if (savedUrl && savedKey) {
       setSupabaseUrl(savedUrl);
       setSupabaseKey(savedKey);
       setIsSupabaseConnected(true);
+    }
+    
+    if (savedVaktijaKey) {
+      setVaktijaApiKey(savedVaktijaKey);
     }
   }, []);
 
@@ -198,6 +206,22 @@ const AdminSettings = () => {
     }, 1000);
   };
 
+  const handleVaktijaApiKeySave = () => {
+    if (!vaktijaApiKey.trim()) {
+      toast.error("Unesite API ključ");
+      return;
+    }
+    
+    localStorage.setItem("vaktija_api_key", vaktijaApiKey.trim());
+    toast.success("Vaktija API ključ sačuvan");
+  };
+
+  const handleVaktijaApiKeyRemove = () => {
+    localStorage.removeItem("vaktija_api_key");
+    setVaktijaApiKey("");
+    toast.success("Vaktija API ključ uklonjen");
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -251,6 +275,51 @@ const AdminSettings = () => {
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Key className="w-6 h-6 text-primary" />
+            <div>
+              <CardTitle>Vaktija API Ključ</CardTitle>
+              <CardDescription>Podesite API ključ za Vaktija.ba servis</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 max-w-md">
+          <div className="space-y-2">
+            <Label htmlFor="vaktijaApiKey">API Ključ</Label>
+            <Input
+              id="vaktijaApiKey"
+              type="text"
+              placeholder="Unesite API ključ..."
+              value={vaktijaApiKey}
+              onChange={(e) => setVaktijaApiKey(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleVaktijaApiKeySave}>
+              Sačuvaj
+            </Button>
+            {vaktijaApiKey && (
+              <Button onClick={handleVaktijaApiKeyRemove} variant="destructive">
+                Ukloni
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            API ključ možete dobiti na{" "}
+            <a 
+              href="https://vaktija.ba" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              vaktija.ba
+            </a>
+          </p>
         </CardContent>
       </Card>
 

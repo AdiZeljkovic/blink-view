@@ -10,7 +10,7 @@ const Header = () => {
   const [vijestiOpen, setVijestiOpen] = useState(false);
   
   const navLinks = [
-    { label: "Dashboard", path: "/" },
+    { label: "Naslovnica", path: "/" },
     { label: "Kalendar", path: "/kalendar" },
     { label: "Boards", path: "/boards" },
     { label: "Finansije", path: "/finance" },
@@ -38,24 +38,22 @@ const Header = () => {
             ADI ZELJKOVIĆ
           </Link>
           <nav className="flex gap-6 items-center">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.path}
-                className={`text-xs font-semibold tracking-wider uppercase transition-all duration-300 relative group ${
-                  location.pathname === link.path
-                    ? 'text-primary'
-                    : 'text-muted-foreground hover:text-primary'
-                }`}
-              >
-                <span className="relative z-10">{link.label}</span>
-                <span className={`absolute inset-0 bg-primary/10 rounded-lg transform transition-all duration-300 ${
-                  location.pathname === link.path 
-                    ? 'scale-100 opacity-100' 
-                    : 'scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-100'
-                }`} />
-              </Link>
-            ))}
+            {/* First item - Naslovnica */}
+            <Link
+              to="/"
+              className={`text-xs font-semibold tracking-wider uppercase transition-all duration-300 relative group ${
+                location.pathname === "/"
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-primary'
+              }`}
+            >
+              <span className="relative z-10">Naslovnica</span>
+              <span className={`absolute inset-0 bg-primary/10 rounded-lg transform transition-all duration-300 ${
+                location.pathname === "/" 
+                  ? 'scale-100 opacity-100' 
+                  : 'scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-100'
+              }`} />
+            </Link>
             
             {/* Vijesti Dropdown */}
             <DropdownMenu open={vijestiOpen} onOpenChange={setVijestiOpen}>
@@ -89,6 +87,26 @@ const Header = () => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Rest of navigation links */}
+            {navLinks.slice(1).map((link) => (
+              <Link
+                key={link.label}
+                to={link.path}
+                className={`text-xs font-semibold tracking-wider uppercase transition-all duration-300 relative group ${
+                  location.pathname === link.path
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-primary'
+                }`}
+              >
+                <span className="relative z-10">{link.label}</span>
+                <span className={`absolute inset-0 bg-primary/10 rounded-lg transform transition-all duration-300 ${
+                  location.pathname === link.path 
+                    ? 'scale-100 opacity-100' 
+                    : 'scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-100'
+                }`} />
+              </Link>
+            ))}
 
             <NotificationCenter />
             <ThemeToggle />

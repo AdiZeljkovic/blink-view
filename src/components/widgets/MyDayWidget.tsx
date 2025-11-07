@@ -87,6 +87,22 @@ const MyDayWidget = () => {
         }
       });
 
+      // Manual Tasks (from TaskList widget - tasks without client_id)
+      const { data: manualTasks } = await supabase
+        .from("tasks")
+        .select("*")
+        .is("client_id", null)
+        .not("completed", "eq", true);
+
+      (manualTasks || []).forEach((t: any) => {
+        allTasks.push({
+          id: `manual-${t.id}`,
+          naziv: t.naziv,
+          source: "manual",
+          completed: t.completed,
+        });
+      });
+
       setTasks(allTasks);
     } catch (error) {
       console.error("Error loading tasks:", error);

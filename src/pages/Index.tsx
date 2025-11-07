@@ -30,20 +30,19 @@ const Index = () => {
           <section className="grid grid-cols-1 lg:grid-cols-4 gap-6 pt-4">
             {/* Left Column */}
             <div className="lg:col-span-1 space-y-6">
-              <Vaktija />
               <Bookmarks />
             </div>
 
             {/* Center Column */}
             <div className="lg:col-span-2 space-y-6">
               <MyDayWidget />
+              <Vaktija />
               <HomelabApps />
               <QuickNotes />
             </div>
 
             {/* Right Column */}
             <div className="lg:col-span-1 space-y-6">
-              <TaskList />
               <Calendar />
               <NotesList />
             </div>
