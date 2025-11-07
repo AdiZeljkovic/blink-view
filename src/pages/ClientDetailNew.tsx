@@ -443,6 +443,7 @@ const ClientDetailNew = () => {
         iznos: invoice.iznos,
         tip: "prihod" as const,
         datum: invoice.datumIzdavanja,
+        kategorija: "Fakture"
       };
 
       const { error } = await supabase

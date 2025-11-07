@@ -114,6 +114,11 @@ const Boards = () => {
       toast.error("Unesite naziv zadatka");
       return;
     }
+    
+    if (!selectedColumn) {
+      toast.error("Odaberite kolonu");
+      return;
+    }
 
     try {
       const cardContent = {

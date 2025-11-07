@@ -73,9 +73,18 @@ const Finance = () => {
       });
       return;
     }
+    
+    if (!datum) {
+      toast({
+        title: "Upozorenje",
+        description: "Odaberite datum",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const newTransaction = {
-      opis,
+      opis: opis.trim(),
       iznos: parseFloat(iznos),
       tip,
       datum,

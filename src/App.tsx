@@ -21,6 +21,7 @@ import Admin from "./pages/AdminNew";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
+import Bookmarks from "./pages/Bookmarks";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/kalendar" element={<Kalendar />} />
             <Route path="/boards" element={<Boards />} />
             <Route path="/finance" element={<Finance />} />
+            <Route path="/bookmarks" element={<Bookmarks />} />
             <Route path="/crm" element={<CRMDashboard />} />
             <Route path="/crm/clients" element={<CRMClients />} />
             <Route path="/crm/clients/:clientId" element={<ClientDetail />} />
