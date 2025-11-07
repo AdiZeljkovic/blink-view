@@ -80,8 +80,7 @@ const KalendarNew = () => {
           naslov: newEvent.title,
           datum: format(selectedDate, "yyyy-MM-dd"),
           vrijeme: newEvent.time,
-          tip: newEvent.tip,
-          opis: newEvent.description
+          tip: newEvent.tip
         }])
         .select()
         .single();
