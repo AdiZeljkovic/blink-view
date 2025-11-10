@@ -27,6 +27,8 @@ const CRMDashboard = () => {
   useEffect(() => {
     if (supabase) {
       loadData();
+    } else {
+      setLoading(false);
     }
   }, [supabase]);
 
@@ -108,6 +110,26 @@ const CRMDashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-muted-foreground">Učitavanje...</p>
+      </div>
+    );
+  }
+
+  if (!supabase) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Supabase nije konfigurisan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Da biste koristili CRM, potrebno je konfigurirati Supabase u admin panelu.
+            </p>
+            <Button onClick={() => window.location.href = '/admin'}>
+              Idi na Admin Panel
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

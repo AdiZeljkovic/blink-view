@@ -20,7 +20,11 @@ const AdminLogin = () => {
     if (email === "adi.zeljkovic@outlook.com" && password === storedPassword) {
       localStorage.setItem("admin_logged_in", "true");
       toast.success("Uspješno prijavljeni!");
-      navigate("/admin");
+      // Force navigation and page reload to ensure state updates
+      setTimeout(() => {
+        navigate("/admin");
+        window.location.reload();
+      }, 100);
     } else {
       toast.error("Pogrešni pristupni podaci");
     }

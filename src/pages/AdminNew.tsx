@@ -29,7 +29,10 @@ const AdminNew = () => {
   const handleLogout = () => {
     localStorage.removeItem("admin_logged_in");
     toast.success("Odjavljeni ste");
-    navigate("/");
+    setTimeout(() => {
+      navigate("/");
+      window.location.reload();
+    }, 100);
   };
 
   if (!isAuthenticated) {
